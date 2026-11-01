@@ -3,6 +3,8 @@ import * as db from './db';
 import * as fileService from './fileService';
 import * as runner from './runner';
 import * as surveyService from './surveyService';
+import * as adminAuthService from './adminAuthService';
+import * as adminSurveyService from './adminSurveyService';
 import { SupportedLanguageId } from '../common/types';
 
 export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): void {
@@ -104,5 +106,38 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
 
   ipcMain.handle('survey:getResponse', async (_, surveyId?: string) => {
     return surveyService.getSurveyResponse(surveyId);
+  });
+
+  // Admin Survey Dashboard Handlers
+  ipcMain.handle('admin:getAuthStatus', async () => {
+    return adminAuthService.getAdminAuthStatus();
+  });
+
+  ipcMain.handle('admin:setupPassword', async (_, password: string) => {
+    return adminAuthService.setupAdminPassword(password);
+  });
+
+  ipcMain.handle('admin:login', async (_, password: string) => {
+    return adminAuthService.loginAdmin(password);
+  });
+
+  ipcMain.handle('admin:logout', async () => {
+    adminAuthService.logoutAdmin();
+  });
+
+  ipcMain.handle('admin:getStats', async (_, token?: string) => {
+    return adminSurveyService.getAdminSurveyStats(token);
+  });
+
+  ipcMain.handle('admin:getResponses', async (_, { filters, token }: { filters?: any; token?: string } = {}) => {
+    return adminSurveyService.getAdminResponses(filters, token);
+  });
+
+  ipcMain.handle('admin:exportData', async (_, { format, token }: { format: 'csv' | 'json' | 'summary'; token?: string }) => {
+    return adminSurveyService.exportSurveyData(format, getMainWindow, token);
+  });
+
+  ipcMain.handle('admin:importData', async (_, token?: string) => {
+    return adminSurveyService.importSurveyData(getMainWindow, token);
   });
 }

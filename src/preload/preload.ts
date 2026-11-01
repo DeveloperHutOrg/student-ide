@@ -63,6 +63,18 @@ const api: ElectronAPI = {
     submit: (payload) => ipcRenderer.invoke('survey:submit', payload),
     getResponse: (surveyId?: string) => ipcRenderer.invoke('survey:getResponse', surveyId),
   },
+
+  // Admin Survey Dashboard
+  admin: {
+    getAuthStatus: () => ipcRenderer.invoke('admin:getAuthStatus'),
+    setupPassword: (password: string) => ipcRenderer.invoke('admin:setupPassword', password),
+    login: (password: string) => ipcRenderer.invoke('admin:login', password),
+    logout: () => ipcRenderer.invoke('admin:logout'),
+    getStats: (token?: string) => ipcRenderer.invoke('admin:getStats', token),
+    getResponses: (filters?: any, token?: string) => ipcRenderer.invoke('admin:getResponses', { filters, token }),
+    exportData: (format: 'csv' | 'json' | 'summary', token?: string) => ipcRenderer.invoke('admin:exportData', { format, token }),
+    importData: (token?: string) => ipcRenderer.invoke('admin:importData', token),
+  },
 };
 
 contextBridge.exposeInMainWorld('api', api);

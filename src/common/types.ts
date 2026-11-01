@@ -130,12 +130,89 @@ export interface SurveySubmitResult {
 export interface SurveyResponseRecord {
   id: number;
   surveyId: string;
-  studentProfileId: number;
+  studentProfileId?: number | null;
   studentName: string;
   studentClass: number;
   answers: SurveyAnswers;
   submittedAt: string;
   status: string;
+  sourceType?: 'local' | 'imported';
+  externalResponseId?: string;
+}
+
+// Admin Survey Dashboard Types
+export interface AdminAuthStatus {
+  isConfigured: boolean;
+  isAuthenticated: boolean;
+}
+
+export interface AdminResponseItem {
+  id: number;
+  surveyId: string;
+  surveyTitle?: string;
+  surveyVersion?: string;
+  studentProfileId?: number | null;
+  studentName: string;
+  studentClass: number;
+  answers: SurveyAnswers;
+  submittedAt: string;
+  status: string;
+  sourceType: 'local' | 'imported';
+  externalResponseId?: string;
+}
+
+export interface AdminSurveyStats {
+  totalResponses: number;
+  localResponses: number;
+  importedResponses: number;
+  currentComputerSubmitted: boolean;
+  classDistribution: Record<number, number>;
+  questionStats: {
+    q1: Record<string, number>;
+    q2: Record<string, number>;
+    q3: Record<string, number>;
+    q4: Record<string, number>;
+    q5: Record<string, number>;
+  };
+  latestSubmissions: AdminResponseItem[];
+}
+
+export interface AdminFilterOptions {
+  studentClass?: number | 'all';
+  surveyVersion?: string | 'all';
+  sourceType?: 'all' | 'local' | 'imported';
+  searchQuery?: string;
+  sortBy?: 'newest' | 'oldest';
+}
+
+export interface ImportSurveyResult {
+  success: boolean;
+  totalInFile: number;
+  importedCount: number;
+  skippedDuplicates: number;
+  rejectedCount: number;
+  details: string[];
+}
+
+export interface ExportBackupRecord {
+  responseId: string | number;
+  surveyId: string;
+  surveyVersion: string;
+  studentName: string;
+  studentClass: number;
+  answers: SurveyAnswers;
+  submittedAt: string;
+  source: 'local' | 'imported';
+}
+
+export interface ExportBackupFormat {
+  exportFormatVersion: '1.0.0';
+  exportedAt: string;
+  generator: string;
+  totalRecords: number;
+  surveyId: string;
+  surveyVersion: string;
+  records: ExportBackupRecord[];
 }
 
 export interface ElectronAPI {
@@ -185,6 +262,18 @@ export interface ElectronAPI {
     getQuestions: (surveyId?: string) => Promise<SurveyDefinition>;
     submit: (payload: SubmitSurveyPayload) => Promise<SurveySubmitResult>;
     getResponse: (surveyId?: string) => Promise<SurveyResponseRecord | null>;
+  };
+
+  // Admin Survey Dashboard
+  admin?: {
+    getAuthStatus: () => Promise<AdminAuthStatus>;
+    setupPassword: (password: string) => Promise<{ success: boolean; token?: string; error?: string }>;
+    login: (password: string) => Promise<{ success: boolean; token?: string; error?: string }>;
+    logout: () => Promise<void>;
+    getStats: (token?: string) => Promise<AdminSurveyStats>;
+    getResponses: (filters?: AdminFilterOptions, token?: string) => Promise<AdminResponseItem[]>;
+    exportData: (format: 'csv' | 'json' | 'summary', token?: string) => Promise<{ success: boolean; filePath?: string; canceled?: boolean; error?: string }>;
+    importData: (token?: string) => Promise<ImportSurveyResult>;
   };
 }
 

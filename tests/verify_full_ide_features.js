@@ -39,98 +39,105 @@ app.whenReady().then(async () => {
     }
   });
 
-  const indexPath = path.join(__dirname, '../dist/index.html');
-  await win.loadFile(indexPath);
+  try {
+    const indexPath = path.join(__dirname, '../dist/index.html');
+    await win.loadFile(indexPath);
 
-  // Wait 3 seconds for React initialization
-  await new Promise((resolve) => setTimeout(resolve, 3000));
+    // Wait 3 seconds for React initialization
+    await new Promise((resolve) => setTimeout(resolve, 3000));
 
-  console.log('\n1. Verifying Profile & Onboarding...');
-  const profile = db.getProfile();
-  console.log('Saved profile in DB:', profile);
-  assert(profile !== null, 'Profile must not be null');
-  assert.strictEqual(profile.student_name, 'vasu');
-  assert.strictEqual(profile.student_class, 12);
-  assert.strictEqual(db.isOnboardingCompleted(), true, 'Onboarding must be completed');
-  console.log('✓ Profile & Onboarding: PASSED');
+    console.log('\n1. Verifying Profile & Onboarding...');
+    const profile = db.getProfile();
+    console.log('Saved profile in DB:', profile);
+    assert(profile !== null, 'Profile must not be null');
+    assert.strictEqual(profile.student_name, 'vasu');
+    assert.strictEqual(profile.student_class, 12);
+    assert.strictEqual(db.isOnboardingCompleted(), true, 'Onboarding must be completed');
+    console.log('✓ Profile & Onboarding: PASSED');
 
-  console.log('\n2. Verifying React Interface & Monaco Editor in DOM...');
-  const domState = await win.webContents.executeJavaScript(`
-    (() => {
-      return {
-        hasRoot: document.getElementById('root') !== null,
-        hasNavbar: document.querySelector('header') !== null,
-        hasSidebar: document.querySelector('aside') !== null || document.body.innerText.includes('FILES'),
-        hasMonaco: document.querySelector('.monaco-editor') !== null,
-        bodyBg: window.getComputedStyle(document.body).backgroundColor,
-        title: document.title,
-      };
-    })()
-  `);
-  console.log('DOM State:', domState);
-  assert(domState.hasRoot, 'Root element must exist');
-  assert(domState.hasNavbar, 'Navbar must exist');
-  assert(domState.hasMonaco, 'Monaco editor container must exist');
-  console.log('✓ React Interface & Monaco Editor: PASSED');
+    console.log('\n2. Verifying React Interface & Monaco Editor in DOM...');
+    const domState = await win.webContents.executeJavaScript(`
+      (() => {
+        return {
+          hasRoot: document.getElementById('root') !== null,
+          hasNavbar: document.querySelector('header') !== null,
+          hasSidebar: document.querySelector('aside') !== null || document.body.innerText.includes('FILES'),
+          hasMonaco: document.querySelector('.monaco-editor') !== null,
+          bodyBg: window.getComputedStyle(document.body).backgroundColor,
+          title: document.title,
+        };
+      })()
+    `);
+    console.log('DOM State:', domState);
+    assert(domState.hasRoot, 'Root element must exist');
+    assert(domState.hasNavbar, 'Navbar must exist');
+    assert(domState.hasMonaco, 'Monaco editor container must exist');
+    console.log('✓ React Interface & Monaco Editor: PASSED');
 
-  console.log('\n3. Verifying Live HTML, CSS & JavaScript Preview Isolation...');
-  const previewState = await win.webContents.executeJavaScript(`
-    (() => {
-      const iframe = document.querySelector('iframe');
-      if (!iframe) return { found: false };
-      const srcDoc = iframe.getAttribute('srcdoc') || '';
-      return {
-        found: true,
-        hasSrcDoc: srcDoc.length > 0,
-        sandbox: iframe.getAttribute('sandbox'),
-        srcDocSnippet: srcDoc.substring(0, 100),
-      };
-    })()
-  `);
-  console.log('Preview State:', previewState);
-  if (previewState.found) {
-    assert(previewState.hasSrcDoc, 'Iframe preview must use srcDoc');
-    assert.strictEqual(previewState.sandbox, 'allow-scripts allow-modals allow-forms');
+    console.log('\n3. Verifying Live HTML, CSS & JavaScript Preview Isolation...');
+    const previewState = await win.webContents.executeJavaScript(`
+      (() => {
+        const iframe = document.querySelector('iframe');
+        if (!iframe) return { found: false };
+        const srcDoc = iframe.getAttribute('srcdoc') || '';
+        return {
+          found: true,
+          hasSrcDoc: srcDoc.length > 0,
+          sandbox: iframe.getAttribute('sandbox'),
+          srcDocSnippet: srcDoc.substring(0, 100),
+        };
+      })()
+    `);
+    console.log('Preview State:', previewState);
+    if (previewState.found) {
+      assert(previewState.hasSrcDoc, 'Iframe preview must use srcDoc');
+      assert.strictEqual(previewState.sandbox, 'allow-scripts allow-modals allow-forms');
+    }
+    console.log('✓ Web Preview Isolation: PASSED');
+
+    console.log('\n4. Verifying JavaScript Runner Execution...');
+    const jsResult = await runner.executeCode(win, {
+      language: 'javascript',
+      code: 'console.log("Hello from Student IDE JavaScript!"); const x = 10 + 25; console.log("Result: " + x);',
+    });
+    console.log('JS execution result:', jsResult);
+    assert.strictEqual(jsResult.success, true);
+    console.log('✓ JavaScript Execution: PASSED');
+
+    console.log('\n5. Verifying Python Runner Execution...');
+    const pyResult = await runner.executeCode(win, {
+      language: 'python',
+      code: 'print("Hello from Python in Student IDE")\nx = [1, 2, 3, 4, 5]\nprint(f"Sum: {sum(x)}")',
+    });
+    console.log('Python execution result:', pyResult);
+    assert.strictEqual(pyResult.success, true);
+    console.log('✓ Python Execution: PASSED');
+
+    console.log('\n6. Verifying SQL Runner Execution...');
+    const sqlResult = await runner.executeCode(win, {
+      language: 'sql',
+      code: 'CREATE TABLE students (id INT, name TEXT); INSERT INTO students VALUES (1, "Aarav"), (2, "Vasu"); SELECT * FROM students;',
+    });
+    console.log('SQL execution result:', sqlResult);
+    assert.strictEqual(sqlResult.success, true);
+    console.log('✓ SQL Execution: PASSED');
+
+    console.log('\n7. Checking for Uncaught Errors...');
+    console.log(`Uncaught errors count: ${errors.length}`);
+    assert.strictEqual(errors.length, 0, 'No uncaught errors should be logged');
+    console.log('✓ Zero Uncaught Errors: PASSED');
+
+    console.log('\n=============================================================');
+    console.log('ALL FUNCTIONAL TESTS PASSED (7/7) - STUDENT IDE FULLY HEALTHY');
+    console.log('=============================================================\n');
+
+    win.destroy();
+    app.quit();
+    process.exit(0);
+  } catch (err) {
+    console.error('Test failed with error:', err);
+    if (!win.isDestroyed()) win.destroy();
+    app.quit();
+    process.exit(1);
   }
-  console.log('✓ Web Preview Isolation: PASSED');
-
-  console.log('\n4. Verifying JavaScript Runner Execution...');
-  const jsResult = await runner.executeCode(win, {
-    language: 'javascript',
-    code: 'console.log("Hello from Student IDE JavaScript!"); const x = 10 + 25; console.log("Result: " + x);',
-  });
-  console.log('JS execution result:', jsResult);
-  assert.strictEqual(jsResult.success, true);
-  console.log('✓ JavaScript Execution: PASSED');
-
-  console.log('\n5. Verifying Python Runner Execution...');
-  const pyResult = await runner.executeCode(win, {
-    language: 'python',
-    code: 'print("Hello from Python in Student IDE")\nx = [1, 2, 3, 4, 5]\nprint(f"Sum: {sum(x)}")',
-  });
-  console.log('Python execution result:', pyResult);
-  assert.strictEqual(pyResult.success, true);
-  console.log('✓ Python Execution: PASSED');
-
-  console.log('\n6. Verifying SQL Runner Execution...');
-  const sqlResult = await runner.executeCode(win, {
-    language: 'sql',
-    code: 'CREATE TABLE students (id INT, name TEXT); INSERT INTO students VALUES (1, "Aarav"), (2, "Vasu"); SELECT * FROM students;',
-  });
-  console.log('SQL execution result:', sqlResult);
-  assert.strictEqual(sqlResult.success, true);
-  console.log('✓ SQL Execution: PASSED');
-
-  console.log('\n7. Checking for Uncaught Errors...');
-  console.log(`Uncaught errors count: ${errors.length}`);
-  assert.strictEqual(errors.length, 0, 'No uncaught errors should be logged');
-  console.log('✓ Zero Uncaught Errors: PASSED');
-
-  console.log('\n=============================================================');
-  console.log('ALL FUNCTIONAL TESTS PASSED (7/7) - STUDENT IDE FULLY HEALTHY');
-  console.log('=============================================================\n');
-
-  win.destroy();
-  app.quit();
-  process.exit(0);
 });

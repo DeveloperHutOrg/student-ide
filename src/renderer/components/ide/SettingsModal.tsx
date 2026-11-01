@@ -26,6 +26,7 @@ interface SettingsModalProps {
   fontSize: number;
   onFontSizeChange: (size: number) => void;
   onOpenAbout?: () => void;
+  onOpenAdmin?: () => void;
 }
 
 const CLASSES = [6, 7, 8, 9, 10, 11, 12];
@@ -41,6 +42,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   fontSize,
   onFontSizeChange,
   onOpenAbout,
+  onOpenAdmin,
 }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'languages' | 'editor' | 'about'>('profile');
 
@@ -357,12 +359,28 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Modal Footer */}
         <div className="h-14 px-6 border-t border-[#313244] bg-[#11111b] flex items-center justify-between">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 text-xs text-[#a6adc8] hover:text-white"
-          >
-            Close
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-xs text-[#a6adc8] hover:text-white"
+            >
+              Close
+            </button>
+            {onOpenAdmin && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenAdmin();
+                }}
+                title="Teacher & Administrator Portal (Ctrl+Shift+A)"
+                className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] text-[#6c7086] hover:text-[#89b4fa] hover:bg-[#313244]/40 rounded-lg transition-colors border border-transparent hover:border-[#313244]"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-[#89b4fa]" />
+                <span>Admin Portal</span>
+              </button>
+            )}
+          </div>
 
           {activeTab !== 'about' && (
             <button

@@ -19,6 +19,8 @@ import { WebPreview } from './components/ide/WebPreview';
 import { SettingsModal } from './components/ide/SettingsModal';
 import { AboutModal } from './components/about/AboutModal';
 import { SurveyView } from './components/survey/SurveyView';
+import { AdminDashboard } from './components/admin/AdminDashboard';
+import { AdminAuthModal } from './components/admin/AdminAuthModal';
 
 type AppStep = 'loading' | 'onboarding_profile' | 'onboarding_languages' | 'ide';
 
@@ -32,6 +34,11 @@ export const App: React.FC = () => {
   // Navigation View: Editor vs Survey
   const [activeView, setActiveView] = useState<'editor' | 'survey'>('editor');
   const [surveyCompleted, setSurveyCompleted] = useState<boolean>(false);
+
+  // Admin Section State
+  const [adminAuthModalOpen, setAdminAuthModalOpen] = useState(false);
+  const [adminDashboardOpen, setAdminDashboardOpen] = useState(false);
+  const [adminToken, setAdminToken] = useState<string>('');
 
   // Workspace & File State
   const [projectDir, setProjectDir] = useState<string>('');
@@ -117,6 +124,25 @@ export const App: React.FC = () => {
 
     loadInitialData();
   }, []);
+
+  // Global admin shortcut (Ctrl+Shift+A) to open offline Admin Survey Dashboard
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+        e.preventDefault();
+        if (adminDashboardOpen) {
+          setAdminDashboardOpen(false);
+        } else if (adminToken) {
+          setAdminDashboardOpen(true);
+        } else {
+          setAdminAuthModalOpen(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [adminDashboardOpen, adminToken]);
 
   // 2. Stream execution events
   useEffect(() => {
@@ -566,6 +592,7 @@ export const App: React.FC = () => {
         fontSize={fontSize}
         onFontSizeChange={(size) => setFontSize(size)}
         onOpenAbout={() => setAboutOpen(true)}
+        onOpenAdmin={() => setAdminAuthModalOpen(true)}
       />
 
       {/* About the Founder & Student IDE Modal */}
@@ -574,6 +601,31 @@ export const App: React.FC = () => {
         onClose={() => setAboutOpen(false)}
         defaultTab="founder"
       />
+
+      {/* Admin Authentication Gate Modal */}
+      <AdminAuthModal
+        isOpen={adminAuthModalOpen}
+        onClose={() => setAdminAuthModalOpen(false)}
+        onAuthenticated={(token) => {
+          setAdminToken(token);
+          setAdminAuthModalOpen(false);
+          setAdminDashboardOpen(true);
+        }}
+      />
+
+      {/* Full-Screen Offline Admin Survey Dashboard */}
+      {adminDashboardOpen && (
+        <div className="fixed inset-0 z-40 bg-[#1e1e2e] flex flex-col">
+          <AdminDashboard
+            token={adminToken}
+            onClose={() => setAdminDashboardOpen(false)}
+            onLogout={() => {
+              setAdminToken('');
+              setAdminDashboardOpen(false);
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };

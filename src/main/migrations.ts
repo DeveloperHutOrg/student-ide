@@ -75,6 +75,69 @@ export const MIGRATIONS: Migration[] = [
       stmt.run(DEFAULT_SURVEY_ID, INITIAL_SURVEY.title, DEFAULT_SURVEY_VERSION);
     },
   },
+  {
+    version: 3,
+    name: '003_admin_survey_dashboard',
+    up: (db: DatabaseSync) => {
+      // 1. Create admin_auth table for locally configured credentials
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS admin_auth (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          password_hash TEXT NOT NULL,
+          salt TEXT NOT NULL,
+          algorithm TEXT NOT NULL DEFAULT 'scrypt',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      // 2. Rebuild survey_responses table to support imported responses from other installations
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS survey_responses_v3 (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          survey_id TEXT NOT NULL,
+          student_profile_id INTEGER,
+          student_name TEXT NOT NULL,
+          student_class INTEGER NOT NULL,
+          answers_json TEXT NOT NULL,
+          submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          status TEXT NOT NULL DEFAULT 'submitted',
+          source_type TEXT NOT NULL DEFAULT 'local',
+          external_response_id TEXT,
+          import_hash TEXT,
+          FOREIGN KEY (survey_id) REFERENCES surveys(id) ON DELETE CASCADE,
+          FOREIGN KEY (student_profile_id) REFERENCES profile(id) ON DELETE SET NULL
+        );
+      `);
+
+      // Check if original survey_responses exists and copy data
+      const checkTable = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='survey_responses'").get();
+      if (checkTable) {
+        db.exec(`
+          INSERT INTO survey_responses_v3 (
+            id, survey_id, student_profile_id, student_name, student_class, answers_json, submitted_at, status, source_type, external_response_id, import_hash
+          )
+          SELECT 
+            id, survey_id, student_profile_id, student_name, student_class, answers_json, submitted_at, status, 'local', 'local-' || id, 'local-' || id
+          FROM survey_responses;
+
+          DROP TABLE survey_responses;
+        `);
+      }
+
+      db.exec(`
+        ALTER TABLE survey_responses_v3 RENAME TO survey_responses;
+
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_survey_local_student 
+        ON survey_responses(survey_id, student_profile_id) 
+        WHERE source_type = 'local' AND student_profile_id IS NOT NULL;
+
+        CREATE UNIQUE INDEX IF NOT EXISTS uq_survey_import_hash 
+        ON survey_responses(import_hash) 
+        WHERE import_hash IS NOT NULL;
+      `);
+    },
+  },
 ];
 
 /**
