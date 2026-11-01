@@ -10,8 +10,10 @@ app.name = 'student-ide';
 const db = require('../dist-electron/main/db');
 const { registerIpcHandlers } = require('../dist-electron/main/ipcHandlers');
 const runner = require('../dist-electron/main/runner');
+const sessionService = require('../dist-electron/main/sessionService');
 
 db.initDatabase();
+sessionService.createSession(1);
 
 app.whenReady().then(async () => {
   console.log('--- STARTING COMPREHENSIVE FUNCTIONAL VERIFICATION ---');

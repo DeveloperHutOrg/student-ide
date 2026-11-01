@@ -11,7 +11,8 @@ import {
   Info,
   ExternalLink,
   ShieldCheck,
-  Globe
+  Globe,
+  LogOut
 } from 'lucide-react';
 import { StudentProfile, SupportedLanguageId, LanguagePreference } from '@/common/types';
 import { ALL_SUPPORTED_LANGUAGES, getSuggestedLanguagesForClass } from '@/common/languages';
@@ -27,6 +28,7 @@ interface SettingsModalProps {
   onFontSizeChange: (size: number) => void;
   onOpenAbout?: () => void;
   onOpenAdmin?: () => void;
+  onLogout?: () => void;
 }
 
 const CLASSES = [6, 7, 8, 9, 10, 11, 12];
@@ -43,6 +45,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onFontSizeChange,
   onOpenAbout,
   onOpenAdmin,
+  onLogout,
 }) => {
   const [activeTab, setActiveTab] = useState<'profile' | 'languages' | 'editor' | 'about'>('profile');
 
@@ -220,6 +223,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   Modifying your grade will automatically update syllabus recommendations.
                 </p>
               </div>
+
+              {/* Active Session & Logout */}
+              {onLogout && (
+                <div className="pt-4 border-t border-[#1E293B] space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-semibold text-[#CBD5E1] uppercase tracking-wider">
+                        Active Student Session
+                      </h4>
+                      <p className="text-[11px] text-[#64748B]">
+                        Log out of your active session to switch student profiles or return to the login screen.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onLogout();
+                    }}
+                    className="flex items-center justify-center gap-2 w-full py-2.5 px-4 rounded-xl border border-rose-900/40 bg-rose-950/20 hover:bg-rose-900/40 text-rose-400 hover:text-rose-300 text-xs font-semibold transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4 text-rose-400" />
+                    <span>Logout of Student Profile</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

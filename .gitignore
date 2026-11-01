@@ -7,6 +7,7 @@ node_modules/
 dist/
 dist-electron/
 dist-package/
+release/
 
 # Local databases and runtime files
 .data/

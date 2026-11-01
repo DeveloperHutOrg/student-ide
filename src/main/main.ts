@@ -3,6 +3,9 @@ import path from 'path';
 import fs from 'fs';
 import { initDatabase, closeDatabase } from './db';
 import { registerIpcHandlers } from './ipcHandlers';
+import { stopActiveExecution } from './runner';
+import { clearSession } from './sessionService';
+import { logoutAdmin } from './adminAuthService';
 
 // Ensure consistent application name and userData directory in dev and production
 app.name = 'student-ide';
@@ -68,9 +71,39 @@ function createWindow(): void {
     mainWindow?.setAlwaysOnTop(false);
   }, 1000);
 
+  // Automatic logout & process cleanup when window closes (Close button, Alt+F4)
+  mainWindow.on('close', () => {
+    performShutdownCleanup();
+  });
+
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+}
+
+function performShutdownCleanup(): void {
+  try {
+    // 1. Terminate running student code execution process tree
+    stopActiveExecution(mainWindow);
+  } catch (err) {
+    console.warn('[Shutdown] Error stopping active execution:', err);
+  }
+
+  try {
+    // 2. Clear student session
+    clearSession();
+    // 3. Clear admin authentication session
+    logoutAdmin();
+  } catch (err) {
+    console.warn('[Shutdown] Error clearing session:', err);
+  }
+
+  try {
+    // 4. Safely flush and close database
+    closeDatabase();
+  } catch (err) {
+    console.warn('[Shutdown] Error closing database:', err);
+  }
 }
 
 // App lifecycle
@@ -90,9 +123,24 @@ app.whenReady().then(() => {
   });
 });
 
+app.on('before-quit', () => {
+  performShutdownCleanup();
+});
+
 app.on('window-all-closed', () => {
-  closeDatabase();
+  performShutdownCleanup();
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+// Windows shutdown & signal traps
+process.on('SIGINT', () => {
+  performShutdownCleanup();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  performShutdownCleanup();
+  process.exit(0);
 });

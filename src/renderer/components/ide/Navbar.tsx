@@ -13,7 +13,8 @@ import {
   CheckCircle2,
   Home,
   WifiOff,
-  Sparkles
+  Sparkles,
+  LogOut
 } from 'lucide-react';
 import { StudentProfile, SupportedLanguageId } from '@/common/types';
 import { BrandLogo } from '../common/BrandLogo';
@@ -34,6 +35,7 @@ interface NavbarProps {
   onToggleTerminal: () => void;
   onOpenSettings: () => void;
   onOpenAbout: () => void;
+  onLogout?: () => void;
   activeFileName?: string;
   activeView: 'dashboard' | 'editor' | 'survey';
   onViewChange: (view: 'dashboard' | 'editor' | 'survey') => void;
@@ -56,6 +58,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleTerminal,
   onOpenSettings,
   onOpenAbout,
+  onLogout,
   activeFileName,
   activeView,
   onViewChange,
@@ -100,6 +103,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             Class {profile ? profile.student_class : '8'}
           </span>
         </button>
+
+        {/* Logout Button */}
+        {onLogout && (
+          <button
+            onClick={onLogout}
+            title="Log out of student session"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-950/20 hover:bg-rose-900/40 border border-rose-900/40 text-rose-400 hover:text-rose-300 text-xs font-semibold transition-colors cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5 text-rose-400" />
+            <span className="hidden md:inline">Logout</span>
+          </button>
+        )}
 
         <div className="h-5 w-px bg-[#1E293B]" />
 

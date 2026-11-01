@@ -24,8 +24,10 @@ import { AboutModal } from './components/about/AboutModal';
 import { SurveyView } from './components/survey/SurveyView';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AdminAuthModal } from './components/admin/AdminAuthModal';
+import { LoginView } from './components/auth/LoginView';
+import { LogoutConfirmModal } from './components/auth/LogoutConfirmModal';
 
-type AppStep = 'splash' | 'onboarding_profile' | 'onboarding_languages' | 'ide';
+type AppStep = 'splash' | 'onboarding_profile' | 'onboarding_languages' | 'login' | 'ide';
 
 export const App: React.FC = () => {
   // Navigation & Profile State
@@ -61,6 +63,8 @@ export const App: React.FC = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [fontSize, setFontSize] = useState(14);
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Determine enabled languages
   const enabledLanguages: SupportedLanguageId[] = languages
@@ -98,17 +102,32 @@ export const App: React.FC = () => {
           const prefs = await window.api.getLanguagePreferences();
           setLanguages(prefs);
 
-          // If onboarding is already completed, prepare workspace and transition to IDE
+          // If onboarding is already completed, check active session in main process
           if (onboardingDone) {
-            setNextStepAfterSplash('ide');
-            window.api.getDefaultProjectsDir()
-              .then((defaultDir) => {
-                setProjectDir(defaultDir);
-                return loadWorkspaceFiles(defaultDir, savedProfile.student_class);
-              })
-              .catch((wsErr) => {
-                console.warn('Workspace load warning:', wsErr);
-              });
+            let isAuthenticated = false;
+            if (window.api.session) {
+              try {
+                const sessionStatus = await window.api.session.getStatus();
+                isAuthenticated = !!(sessionStatus && sessionStatus.isAuthenticated);
+              } catch (sessErr) {
+                console.warn('Session check warning:', sessErr);
+              }
+            }
+
+            if (isAuthenticated) {
+              setNextStepAfterSplash('ide');
+              window.api.getDefaultProjectsDir()
+                .then((defaultDir) => {
+                  setProjectDir(defaultDir);
+                  return loadWorkspaceFiles(defaultDir, savedProfile.student_class);
+                })
+                .catch((wsErr) => {
+                  console.warn('Workspace load warning:', wsErr);
+                });
+            } else {
+              // No active session: Require student login on startup
+              setNextStepAfterSplash('login');
+            }
             return;
           }
 
@@ -414,6 +433,11 @@ export const App: React.FC = () => {
       await window.api.saveLanguagePreferences(enabledLanguageIds);
       await window.api.setOnboardingCompleted(true);
 
+      // Establish active session in main process
+      if (window.api.session) {
+        await window.api.session.login({ studentId: profile?.id });
+      }
+
       const updatedPrefs = await window.api.getLanguagePreferences();
       setLanguages(updatedPrefs);
 
@@ -457,6 +481,79 @@ export const App: React.FC = () => {
     }
   };
 
+  // Student Login Handler (from LoginView)
+  const handleLogin = async () => {
+    try {
+      if (window.api?.session) {
+        await window.api.session.login({ studentId: profile?.id });
+      }
+      const defaultDir = await window.api.getDefaultProjectsDir();
+      setProjectDir(defaultDir);
+      await loadWorkspaceFiles(defaultDir, profile?.student_class || 8);
+      setStep('ide');
+    } catch (err) {
+      console.error('Failed to log in:', err);
+      setStep('ide');
+    }
+  };
+
+  // Switch Student Handler (from LoginView)
+  const handleSwitchStudent = async (name: string, studentClass: number) => {
+    try {
+      if (!window.api) return;
+      const updated = await window.api.saveProfile(name, studentClass);
+      setProfile(updated);
+      await window.api.setOnboardingCompleted(true);
+      const updatedPrefs = await window.api.getLanguagePreferences();
+      setLanguages(updatedPrefs);
+
+      if (window.api.session) {
+        await window.api.session.login({ studentId: updated.id, name, studentClass });
+      }
+
+      const defaultDir = await window.api.getDefaultProjectsDir();
+      setProjectDir(defaultDir);
+      await loadWorkspaceFiles(defaultDir, studentClass);
+      setStep('ide');
+    } catch (err) {
+      console.error('Failed to switch student:', err);
+    }
+  };
+
+  // Initiate Logout (opens confirmation dialog)
+  const handleInitiateLogout = () => {
+    setLogoutConfirmOpen(true);
+  };
+
+  // Confirm Logout (stops execution, saves dirty files, clears session, transitions to Login)
+  const handleConfirmLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      // 1. If active file is dirty, safely save it
+      if (activeFile && activeFile.isDirty) {
+        await handleSaveFile();
+      }
+
+      // 2. Terminate any running student execution
+      if (isRunning) {
+        handleStopCode();
+      }
+
+      // 3. Clear session and stop process in main process
+      if (window.api?.session) {
+        await window.api.session.logout();
+      }
+    } catch (err) {
+      console.warn('Error during logout:', err);
+    } finally {
+      setIsLoggingOut(false);
+      setLogoutConfirmOpen(false);
+      setSettingsOpen(false);
+      setActiveFile(null);
+      setStep('login');
+    }
+  };
+
   // Render Splash Screen
   if (step === 'splash') {
     return (
@@ -493,6 +590,45 @@ export const App: React.FC = () => {
     );
   }
 
+  // Render Offline Login Screen
+  if (step === 'login') {
+    return (
+      <>
+        <LoginView
+          profile={profile}
+          onLogin={handleLogin}
+          onSwitchStudent={handleSwitchStudent}
+          onOpenAdminAuth={() => setAdminAuthModalOpen(true)}
+        />
+
+        {/* Admin Authentication Gate Modal */}
+        <AdminAuthModal
+          isOpen={adminAuthModalOpen}
+          onClose={() => setAdminAuthModalOpen(false)}
+          onAuthenticated={(token) => {
+            setAdminToken(token);
+            setAdminAuthModalOpen(false);
+            setAdminDashboardOpen(true);
+          }}
+        />
+
+        {/* Full-Screen Offline Admin Survey Dashboard */}
+        {adminDashboardOpen && (
+          <div className="fixed inset-0 z-40 bg-[#0B0F19] flex flex-col">
+            <AdminDashboard
+              token={adminToken}
+              onClose={() => setAdminDashboardOpen(false)}
+              onLogout={() => {
+                setAdminToken('');
+                setAdminDashboardOpen(false);
+              }}
+            />
+          </div>
+        )}
+      </>
+    );
+  }
+
   // Render Main IDE Workspace
   return (
     <div className="h-screen w-screen bg-[#0B0F19] text-[#F8FAFC] flex flex-col overflow-hidden">
@@ -517,6 +653,7 @@ export const App: React.FC = () => {
         onToggleTerminal={() => setShowTerminal(!showTerminal)}
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenAbout={() => setAboutOpen(true)}
+        onLogout={handleInitiateLogout}
         activeFileName={activeFile?.name}
         activeView={activeView}
         onViewChange={setActiveView}
@@ -648,6 +785,16 @@ export const App: React.FC = () => {
         onFontSizeChange={(size) => setFontSize(size)}
         onOpenAbout={() => setAboutOpen(true)}
         onOpenAdmin={() => setAdminAuthModalOpen(true)}
+        onLogout={handleInitiateLogout}
+      />
+
+      {/* Logout Confirmation Dialog */}
+      <LogoutConfirmModal
+        isOpen={logoutConfirmOpen}
+        studentName={profile?.student_name}
+        onCancel={() => setLogoutConfirmOpen(false)}
+        onConfirm={handleConfirmLogout}
+        isLoggingOut={isLoggingOut}
       />
 
       {/* About DeveloperHut & Student IDE Modal */}

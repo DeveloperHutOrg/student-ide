@@ -9,7 +9,7 @@
     "build": "npm run build:electron && npm run build:renderer",
     "dev": "concurrently -k \"vite\" \"tsc -p tsconfig.electron.json -w\" \"wait-on tcp:5173 && electron .\"",
     "start": "npm run build:electron && electron .",
-    "test": "node tests/test_cpp_execution.js && node tests/test_cpp_stop_execution.js && node tests/test_admin_survey_module.js && node tests/test_survey_module.js && node tests/audit_phase3.js && node tests/test_two_computer_lab_simulation.js && node tests/run_functional_test.js",
+    "test": "node tests/test_cpp_execution.js && node tests/test_cpp_stop_execution.js && node tests/test_admin_survey_module.js && node tests/test_survey_module.js && node tests/audit_phase3.js && node tests/test_two_computer_lab_simulation.js && node tests/test_session_management.js && node tests/run_functional_test.js",
     "setup:runtimes": "node scripts/setup_runtimes.js",
     "package": "npm run setup:runtimes && npm run build && electron-builder --win --dir",
     "dist:win": "npm run setup:runtimes && npm run build && electron-builder --win",
@@ -26,14 +26,10 @@
   "author": "Developer Hut (https://github.com/DeveloperHutOrg)",
   "license": "MIT",
   "dependencies": {
-    "@monaco-editor/react": "^4.7.0",
-    "lucide-react": "^1.16.0",
-    "monaco-editor": "^0.52.2",
-    "react": "^19.2.4",
-    "react-dom": "^19.2.4",
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "@types/node": "^22.13.10",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -42,7 +38,11 @@
     "concurrently": "^9.2.1",
     "electron": "^40.8.0",
     "electron-builder": "^26.18.0",
+    "lucide-react": "^1.16.0",
+    "monaco-editor": "^0.52.2",
     "postcss": "^8.5.6",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "tailwindcss": "^3.4.17",
     "typescript": "^7.0.2",
     "vite": "^7.3.1",
@@ -52,8 +52,10 @@
     "appId": "in.developerhut.studentide",
     "productName": "Student IDE",
     "copyright": "Copyright © 2026 DeveloperHut",
+    "compression": "maximum",
+    "asar": true,
     "directories": {
-      "output": "dist-package",
+      "output": "release",
       "buildResources": "build"
     },
     "files": [
@@ -71,9 +73,14 @@
       }
     ],
     "win": {
+      "executableName": "StudentIDE",
       "target": [
-        "nsis",
-        "dir"
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
       ],
       "icon": "build/icon.ico",
       "requestedExecutionLevel": "asInvoker"
@@ -88,7 +95,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Student IDE",
-      "artifactName": "${productName}-Setup-${version}.${ext}"
+      "artifactName": "Student-IDE-Setup-${version}-x64.${ext}",
+      "deleteAppDataOnUninstall": false,
+      "differentialPackage": false
     }
   }
 }

@@ -7,6 +7,13 @@ const api: ElectronAPI = {
   saveProfile: (name: string, studentClass: number) =>
     ipcRenderer.invoke('profile:save', { name, studentClass }),
 
+  // Session & Logout
+  session: {
+    getStatus: () => ipcRenderer.invoke('session:getStatus'),
+    login: (params) => ipcRenderer.invoke('session:login', params),
+    logout: () => ipcRenderer.invoke('session:logout'),
+  },
+
   // Languages
   getLanguagePreferences: () => ipcRenderer.invoke('languages:get'),
   saveLanguagePreferences: (enabledIds: SupportedLanguageId[]) =>

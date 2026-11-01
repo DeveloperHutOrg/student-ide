@@ -215,11 +215,24 @@ export interface ExportBackupFormat {
   records: ExportBackupRecord[];
 }
 
+export interface PublicSessionInfo {
+  isAuthenticated: boolean;
+  student?: StudentProfile;
+  loginTime?: number;
+}
+
 export interface ElectronAPI {
   // Profile
   getProfile: () => Promise<StudentProfile | null>;
   saveProfile: (name: string, studentClass: number) => Promise<StudentProfile>;
   
+  // Session & Logout
+  session: {
+    getStatus: () => Promise<PublicSessionInfo>;
+    login: (params?: { studentId?: number; name?: string; studentClass?: number }) => Promise<{ success: boolean; session: PublicSessionInfo }>;
+    logout: () => Promise<{ success: boolean }>;
+  };
+
   // Languages
   getLanguagePreferences: () => Promise<LanguagePreference[]>;
   saveLanguagePreferences: (enabledIds: SupportedLanguageId[]) => Promise<void>;

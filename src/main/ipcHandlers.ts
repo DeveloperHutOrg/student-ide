@@ -5,9 +5,30 @@ import * as runner from './runner';
 import * as surveyService from './surveyService';
 import * as adminAuthService from './adminAuthService';
 import * as adminSurveyService from './adminSurveyService';
+import * as sessionService from './sessionService';
 import { SupportedLanguageId } from '../common/types';
 
 export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): void {
+  // Session & Logout handlers
+  ipcMain.handle('session:getStatus', async () => {
+    return sessionService.getActiveSession();
+  });
+
+  ipcMain.handle('session:login', async (_, params?: { studentId?: number; name?: string; studentClass?: number }) => {
+    if (params?.name && params?.studentClass) {
+      db.saveProfile(params.name, params.studentClass);
+    }
+    return sessionService.createSession(params?.studentId || 1);
+  });
+
+  ipcMain.handle('session:logout', async () => {
+    const win = getMainWindow();
+    // 1. Forcefully terminate any running student code processes
+    runner.stopActiveExecution(win);
+    // 2. Clear student and admin session
+    return sessionService.logout();
+  });
+
   // Profile handlers
   ipcMain.handle('profile:get', async () => {
     return db.getProfile();
