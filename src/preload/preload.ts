@@ -28,6 +28,7 @@ const api: ElectronAPI = {
   // Execution
   runCode: (params) => ipcRenderer.invoke('runner:run', params),
   stopExecution: () => ipcRenderer.invoke('runner:stop'),
+  sendStdin: (input: string) => ipcRenderer.invoke('runner:sendStdin', input),
 
   // Streaming events
   onExecutionOutput: (callback: (output: ExecutionOutput) => void) => {

@@ -91,6 +91,10 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
     runner.stopActiveExecution(win);
   });
 
+  ipcMain.handle('runner:sendStdin', async (_, input: string) => {
+    return runner.writeStdin(input);
+  });
+
   // Survey handlers
   ipcMain.handle('survey:getStatus', async (_, surveyId?: string) => {
     return surveyService.getSurveyStatus(surveyId);

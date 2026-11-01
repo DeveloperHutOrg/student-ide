@@ -242,6 +242,7 @@ export interface ElectronAPI {
     projectDir?: string;
   }) => Promise<{ executionId: string; success: boolean }>;
   stopExecution: () => Promise<void>;
+  sendStdin: (input: string) => Promise<boolean>;
   
   // Streaming execution events
   onExecutionOutput: (callback: (output: ExecutionOutput) => void) => () => void;

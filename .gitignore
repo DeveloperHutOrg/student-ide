@@ -10,6 +10,7 @@ dist-package/
 
 # Local databases and runtime files
 .data/
+runtimes/
 *.db
 *.db-journal
 

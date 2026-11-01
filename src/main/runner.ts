@@ -87,6 +87,22 @@ export function resolveRuntimePath(language: SupportedLanguageId): string | null
 }
 
 /**
+ * Safely writes input text to the active process's standard input stream (for cin / input()).
+ */
+export function writeStdin(input: string): boolean {
+  if (!activeExecution || !activeExecution.process || !activeExecution.process.stdin) {
+    return false;
+  }
+  try {
+    activeExecution.process.stdin.write(input);
+    return true;
+  } catch (err) {
+    console.error('Failed to write to stdin:', err);
+    return false;
+  }
+}
+
+/**
  * Safely terminates the active process and its entire child process tree on Windows.
  */
 export function stopActiveExecution(window: BrowserWindow | null): void {
@@ -277,15 +293,19 @@ export async function executeCode(
     let child: ChildProcess;
 
     if (language === 'cpp') {
-      // Step 1: Compile C++ to temp executable
+      // Step 1: Compile C++17 to temp executable
       const outExe = path.join(tempDir, `prog_${Date.now()}.exe`);
       tempFilesToClean.push(outExe);
 
-      emitOutput(window, 'info', `Compiling ${path.basename(targetFilePath)}...\n`);
+      emitOutput(window, 'info', `Compiling ${path.basename(targetFilePath)} (C++17)...\n`);
       
-      const compileProcess = spawn(runtimePath, [targetFilePath, '-o', outExe], {
+      const binDir = path.dirname(runtimePath);
+      const compileProcess = spawn(runtimePath, ['-std=c++17', targetFilePath, '-o', outExe], {
         cwd: workingDir,
-        shell: true,
+        env: {
+          ...process.env,
+          PATH: `${binDir};${process.env.PATH || ''}`,
+        },
       });
 
       let compileStderr = '';
@@ -311,9 +331,25 @@ export async function executeCode(
       }
 
       emitOutput(window, 'success', `[Compilation successful. Running program...]\n\n`);
-      child = spawn(outExe, [], { cwd: workingDir });
+      child = spawn(outExe, [], {
+        cwd: workingDir,
+        env: {
+          ...process.env,
+          PATH: `${binDir};${process.env.PATH || ''}`,
+        },
+      });
+    } else if (language === 'javascript') {
+      // Execute with bundled Electron node runtime or system node
+      const execPath = process.execPath;
+      child = spawn(execPath, [targetFilePath], {
+        cwd: workingDir,
+        env: {
+          ...process.env,
+          ELECTRON_RUN_AS_NODE: '1',
+        },
+      });
     } else {
-      // Python, JavaScript, PHP
+      // Python, PHP
       const args = [targetFilePath];
       child = spawn(runtimePath, args, { cwd: workingDir });
     }

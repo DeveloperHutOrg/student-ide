@@ -53,8 +53,21 @@ export const Terminal: React.FC<TerminalProps> = ({
     }
   };
 
+  const [inputValue, setInputValue] = React.useState('');
+
+  const handleSendInput = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!inputValue) return;
+    try {
+      await window.api.sendStdin(inputValue + '\n');
+      setInputValue('');
+    } catch (err) {
+      console.error('Failed to send stdin:', err);
+    }
+  };
+
   return (
-    <div className="h-48 bg-[#11111b] border-t border-[#313244] flex flex-col select-none shrink-0">
+    <div className="h-56 bg-[#11111b] border-t border-[#313244] flex flex-col select-none shrink-0">
       {/* Terminal Header */}
       <div className="h-8 bg-[#181825] px-3 flex items-center justify-between border-b border-[#313244]">
         <div className="flex items-center gap-2">
@@ -124,6 +137,31 @@ export const Terminal: React.FC<TerminalProps> = ({
           ))
         )}
       </div>
+
+      {/* Interactive Stdin Bar (Active when program is running) */}
+      {isRunning && (
+        <form
+          onSubmit={handleSendInput}
+          className="h-8 bg-[#181825] px-3 flex items-center gap-2 border-t border-[#313244]"
+        >
+          <span className="text-[#89b4fa] font-mono text-xs select-none font-bold">&gt;</span>
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="Type input for program (cin / input) and press Enter..."
+            className="flex-1 bg-transparent text-[#cdd6f4] font-mono text-xs focus:outline-none placeholder:text-[#585b70]"
+            autoFocus
+          />
+          <button
+            type="submit"
+            disabled={!inputValue.trim()}
+            className="px-2 py-0.5 text-[11px] bg-[#89b4fa]/20 hover:bg-[#89b4fa]/30 text-[#89b4fa] rounded transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Send
+          </button>
+        </form>
+      )}
     </div>
   );
 };

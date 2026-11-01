@@ -122,13 +122,22 @@ app.whenReady().then(async () => {
     assert.strictEqual(sqlResult.success, true);
     console.log('✓ SQL Execution: PASSED');
 
-    console.log('\n7. Checking for Uncaught Errors...');
+    console.log('\n7. Verifying Bundled C++17 Runner Execution...');
+    const cppResult = await runner.executeCode(win, {
+      language: 'cpp',
+      code: '#include <iostream>\n#include <string_view>\nint main() { std::string_view msg = "Hello from bundled C++17!"; std::cout << msg << std::endl; return 0; }',
+    });
+    console.log('C++ execution result:', cppResult);
+    assert.strictEqual(cppResult.success, true);
+    console.log('✓ C++17 Execution: PASSED');
+
+    console.log('\n8. Checking for Uncaught Errors...');
     console.log(`Uncaught errors count: ${errors.length}`);
     assert.strictEqual(errors.length, 0, 'No uncaught errors should be logged');
     console.log('✓ Zero Uncaught Errors: PASSED');
 
     console.log('\n=============================================================');
-    console.log('ALL FUNCTIONAL TESTS PASSED (7/7) - STUDENT IDE FULLY HEALTHY');
+    console.log('ALL FUNCTIONAL TESTS PASSED (8/8) - STUDENT IDE FULLY HEALTHY');
     console.log('=============================================================\n');
 
     win.destroy();
