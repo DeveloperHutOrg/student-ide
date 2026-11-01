@@ -70,6 +70,74 @@ export interface AppSettings {
   autoSave: boolean;
 }
 
+// Survey Module Types
+export type SurveyQuestionType = 'single_choice' | 'multiple_choice' | 'text';
+
+export interface SurveyQuestion {
+  id: string;
+  questionNumber: number;
+  text: string;
+  type: SurveyQuestionType;
+  required: boolean;
+  options?: string[];
+  placeholder?: string;
+}
+
+export interface SurveyDefinition {
+  id: string;
+  title: string;
+  version: string;
+  description: string;
+  isActive: boolean;
+  questions: SurveyQuestion[];
+}
+
+export interface SurveyStatus {
+  hasSubmitted: boolean;
+  submittedAt?: string;
+  surveyId: string;
+  surveyTitle: string;
+  surveyVersion: string;
+  studentProfile: {
+    id: number;
+    name: string;
+    studentClass: number;
+  } | null;
+}
+
+export interface SurveyAnswers {
+  q1: string;
+  q2: string;
+  q3: string;
+  q4: string | string[];
+  q5: string | string[];
+  q6?: string;
+  [key: string]: any;
+}
+
+export interface SubmitSurveyPayload {
+  surveyId: string;
+  answers: SurveyAnswers;
+}
+
+export interface SurveySubmitResult {
+  success: boolean;
+  submittedAt: string;
+  responseId: number;
+  message?: string;
+}
+
+export interface SurveyResponseRecord {
+  id: number;
+  surveyId: string;
+  studentProfileId: number;
+  studentName: string;
+  studentClass: number;
+  answers: SurveyAnswers;
+  submittedAt: string;
+  status: string;
+}
+
 export interface ElectronAPI {
   // Profile
   getProfile: () => Promise<StudentProfile | null>;
@@ -106,6 +174,18 @@ export interface ElectronAPI {
   isOnboardingCompleted: () => Promise<boolean>;
   setOnboardingCompleted: (completed: boolean) => Promise<void>;
   openExternalUrl: (url: string) => Promise<void>;
+
+  // Survey Module
+  getSurveyStatus: (surveyId?: string) => Promise<SurveyStatus>;
+  getSurveyQuestions: (surveyId?: string) => Promise<SurveyDefinition>;
+  submitSurvey: (payload: SubmitSurveyPayload) => Promise<SurveySubmitResult>;
+  getSurveyResponse: (surveyId?: string) => Promise<SurveyResponseRecord | null>;
+  survey?: {
+    getStatus: (surveyId?: string) => Promise<SurveyStatus>;
+    getQuestions: (surveyId?: string) => Promise<SurveyDefinition>;
+    submit: (payload: SubmitSurveyPayload) => Promise<SurveySubmitResult>;
+    getResponse: (surveyId?: string) => Promise<SurveyResponseRecord | null>;
+  };
 }
 
 declare global {

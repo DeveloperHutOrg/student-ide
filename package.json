@@ -9,7 +9,7 @@
     "build": "npm run build:electron && npm run build:renderer",
     "dev": "concurrently -k \"vite\" \"tsc -p tsconfig.electron.json -w\" \"wait-on tcp:5173 && electron .\"",
     "start": "npm run build:electron && electron .",
-    "test": "node tests/audit_phase3.js && node tests/run_functional_test.js",
+    "test": "node tests/test_survey_module.js && node tests/audit_phase3.js && node tests/run_functional_test.js",
     "package": "npm run build && electron-builder --win --dir",
     "dist:win": "npm run build && electron-builder --win",
     "preview": "vite preview"
@@ -29,7 +29,8 @@
     "lucide-react": "^1.16.0",
     "monaco-editor": "^0.52.2",
     "react": "^19.2.4",
-    "react-dom": "^19.2.4"
+    "react-dom": "^19.2.4",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^22.13.10",

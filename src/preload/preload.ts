@@ -51,6 +51,18 @@ const api: ElectronAPI = {
   setOnboardingCompleted: (completed: boolean) =>
     ipcRenderer.invoke('onboarding:setCompleted', completed),
   openExternalUrl: (url: string) => ipcRenderer.invoke('app:openExternal', url),
+
+  // Survey Module
+  getSurveyStatus: (surveyId?: string) => ipcRenderer.invoke('survey:getStatus', surveyId),
+  getSurveyQuestions: (surveyId?: string) => ipcRenderer.invoke('survey:getQuestions', surveyId),
+  submitSurvey: (payload) => ipcRenderer.invoke('survey:submit', payload),
+  getSurveyResponse: (surveyId?: string) => ipcRenderer.invoke('survey:getResponse', surveyId),
+  survey: {
+    getStatus: (surveyId?: string) => ipcRenderer.invoke('survey:getStatus', surveyId),
+    getQuestions: (surveyId?: string) => ipcRenderer.invoke('survey:getQuestions', surveyId),
+    submit: (payload) => ipcRenderer.invoke('survey:submit', payload),
+    getResponse: (surveyId?: string) => ipcRenderer.invoke('survey:getResponse', surveyId),
+  },
 };
 
 contextBridge.exposeInMainWorld('api', api);

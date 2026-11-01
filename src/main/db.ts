@@ -5,6 +5,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { StudentProfile, LanguagePreference, SupportedLanguageId } from '../common/types';
 import { ALL_SUPPORTED_LANGUAGES, getSuggestedLanguagesForClass } from '../common/languages';
 
+import { runMigrations } from './migrations';
+
 let dbInstance: DatabaseSync | null = null;
 
 export function getDatabasePath(): string {
@@ -42,28 +44,8 @@ export function initDatabase(customPath?: string): DatabaseSync {
   }
   const db = new DatabaseSync(dbPath);
 
-  // Initialize schema
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS profile (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      student_name TEXT NOT NULL,
-      student_class INTEGER NOT NULL CHECK (student_class BETWEEN 6 AND 12),
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS language_preferences (
-      language_id TEXT PRIMARY KEY,
-      enabled INTEGER NOT NULL DEFAULT 1,
-      is_suggested INTEGER NOT NULL DEFAULT 0,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-
-    CREATE TABLE IF NOT EXISTS settings (
-      key TEXT PRIMARY KEY,
-      value TEXT NOT NULL
-    );
-  `);
+  // Run schema migrations and enable foreign keys
+  runMigrations(db);
 
   dbInstance = db;
   return db;

@@ -18,6 +18,7 @@ import { Terminal } from './components/ide/Terminal';
 import { WebPreview } from './components/ide/WebPreview';
 import { SettingsModal } from './components/ide/SettingsModal';
 import { AboutModal } from './components/about/AboutModal';
+import { SurveyView } from './components/survey/SurveyView';
 
 type AppStep = 'loading' | 'onboarding_profile' | 'onboarding_languages' | 'ide';
 
@@ -27,6 +28,10 @@ export const App: React.FC = () => {
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [pendingProfile, setPendingProfile] = useState<{ name: string; studentClass: number } | null>(null);
   const [languages, setLanguages] = useState<LanguagePreference[]>([]);
+
+  // Navigation View: Editor vs Survey
+  const [activeView, setActiveView] = useState<'editor' | 'survey'>('editor');
+  const [surveyCompleted, setSurveyCompleted] = useState<boolean>(false);
 
   // Workspace & File State
   const [projectDir, setProjectDir] = useState<string>('');
@@ -63,6 +68,17 @@ export const App: React.FC = () => {
         // Fetch saved profile and onboarding status from local SQLite database
         const savedProfile = await window.api.getProfile();
         const onboardingDone = await window.api.isOnboardingCompleted();
+
+        // Check survey completion status to restore green tick if previously submitted
+        if (window.api.getSurveyStatus) {
+          window.api.getSurveyStatus()
+            .then((surveyStatus) => {
+              if (surveyStatus && surveyStatus.hasSubmitted) {
+                setSurveyCompleted(true);
+              }
+            })
+            .catch((err) => console.warn('[App] Failed to check survey status:', err));
+        }
 
         if (savedProfile && savedProfile.student_name && savedProfile.student_name.trim().length > 0) {
           // Profile exists! Set profile in state
@@ -453,80 +469,91 @@ export const App: React.FC = () => {
         onOpenSettings={() => setSettingsOpen(true)}
         onOpenAbout={() => setAboutOpen(true)}
         activeFileName={activeFile?.name}
+        activeView={activeView}
+        onViewChange={setActiveView}
+        isSurveyCompleted={surveyCompleted}
       />
 
-      {/* Main IDE Workspace */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar */}
-        <Sidebar
-          projectDir={projectDir}
-          files={files}
-          activeFilePath={activeFile?.path}
-          onFileSelect={handleFileSelect}
-          onRefresh={() => projectDir && profile && loadWorkspaceFiles(projectDir, profile.student_class)}
-          onSelectProjectDir={handleSelectFolder}
-          onCreateFile={handleCreateFile}
-          onCreateFolder={handleCreateFolder}
-          onDeleteFile={handleDeleteFile}
-          enabledLanguages={enabledLanguages}
+      {/* Main View: Survey View OR Code Editor Workspace */}
+      {activeView === 'survey' ? (
+        <SurveyView
+          onBackToEditor={() => setActiveView('editor')}
+          onSurveySubmitted={() => setSurveyCompleted(true)}
         />
+      ) : (
+        /* Main IDE Workspace */
+        <div className="flex-1 flex overflow-hidden">
+          {/* Left Sidebar */}
+          <Sidebar
+            projectDir={projectDir}
+            files={files}
+            activeFilePath={activeFile?.path}
+            onFileSelect={handleFileSelect}
+            onRefresh={() => projectDir && profile && loadWorkspaceFiles(projectDir, profile.student_class)}
+            onSelectProjectDir={handleSelectFolder}
+            onCreateFile={handleCreateFile}
+            onCreateFolder={handleCreateFolder}
+            onDeleteFile={handleDeleteFile}
+            enabledLanguages={enabledLanguages}
+          />
 
-        {/* Center / Right Split Area */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Editor and Web Preview Split */}
-          <div className="flex-1 flex overflow-hidden">
-            {activeFile ? (
-              <Editor
-                value={activeFile.content}
-                onChange={(newVal) => {
-                  setActiveFile((prev) =>
-                    prev ? { ...prev, content: newVal, isDirty: true } : null
-                  );
-                }}
-                language={activeFile.language}
-                fileName={activeFile.name}
-                fontSize={fontSize}
-                onSave={handleSaveFile}
-                onRun={handleRunCode}
-              />
-            ) : (
-              <div className="flex-1 bg-[#1e1e2e] flex items-center justify-center text-[#6c7086] text-sm select-none">
-                <div className="text-center">
-                  <p className="text-base text-[#a6adc8] font-medium mb-1">No file open</p>
-                  <p className="text-xs">Select a file from the explorer on the left or create a new one.</p>
+          {/* Center / Right Split Area */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Editor and Web Preview Split */}
+            <div className="flex-1 flex overflow-hidden">
+              {activeFile ? (
+                <Editor
+                  value={activeFile.content}
+                  onChange={(newVal) => {
+                    setActiveFile((prev) =>
+                      prev ? { ...prev, content: newVal, isDirty: true } : null
+                    );
+                  }}
+                  language={activeFile.language}
+                  fileName={activeFile.name}
+                  fontSize={fontSize}
+                  onSave={handleSaveFile}
+                  onRun={handleRunCode}
+                />
+              ) : (
+                <div className="flex-1 bg-[#1e1e2e] flex items-center justify-center text-[#6c7086] text-sm select-none">
+                  <div className="text-center">
+                    <p className="text-base text-[#a6adc8] font-medium mb-1">No file open</p>
+                    <p className="text-xs">Select a file from the explorer on the left or create a new one.</p>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Optional Side-by-side Web Preview for HTML/CSS */}
-            {showPreview && (
-              <WebPreview
-                htmlContent={
-                  activeFile?.language === 'html'
-                    ? activeFile.content
-                    : '<!DOCTYPE html><html><body><h2 style="font-family:sans-serif">Student IDE Preview</h2></body></html>'
-                }
-                cssContent={activeFile?.language === 'css' ? activeFile.content : undefined}
-                onClose={() => setShowPreview(false)}
+              {/* Optional Side-by-side Web Preview for HTML/CSS */}
+              {showPreview && (
+                <WebPreview
+                  htmlContent={
+                    activeFile?.language === 'html'
+                      ? activeFile.content
+                      : '<!DOCTYPE html><html><body><h2 style="font-family:sans-serif">Student IDE Preview</h2></body></html>'
+                  }
+                  cssContent={activeFile?.language === 'css' ? activeFile.content : undefined}
+                  onClose={() => setShowPreview(false)}
+                />
+              )}
+            </div>
+
+            {/* Bottom Output Terminal */}
+            {showTerminal && (
+              <Terminal
+                outputs={terminalOutputs}
+                lastResult={lastResult}
+                isRunning={isRunning}
+                onClear={() => {
+                  setTerminalOutputs([]);
+                  setLastResult(null);
+                }}
+                onClose={() => setShowTerminal(false)}
               />
             )}
           </div>
-
-          {/* Bottom Output Terminal */}
-          {showTerminal && (
-            <Terminal
-              outputs={terminalOutputs}
-              lastResult={lastResult}
-              isRunning={isRunning}
-              onClear={() => {
-                setTerminalOutputs([]);
-                setLastResult(null);
-              }}
-              onClose={() => setShowTerminal(false)}
-            />
-          )}
         </div>
-      </div>
+      )}
 
       {/* Settings & Profile Modal */}
       <SettingsModal

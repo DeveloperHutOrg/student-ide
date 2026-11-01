@@ -2,6 +2,7 @@ import { ipcMain, BrowserWindow, shell } from 'electron';
 import * as db from './db';
 import * as fileService from './fileService';
 import * as runner from './runner';
+import * as surveyService from './surveyService';
 import { SupportedLanguageId } from '../common/types';
 
 export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): void {
@@ -86,5 +87,22 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
   ipcMain.handle('runner:stop', async () => {
     const win = getMainWindow();
     runner.stopActiveExecution(win);
+  });
+
+  // Survey handlers
+  ipcMain.handle('survey:getStatus', async (_, surveyId?: string) => {
+    return surveyService.getSurveyStatus(surveyId);
+  });
+
+  ipcMain.handle('survey:getQuestions', async (_, surveyId?: string) => {
+    return surveyService.getSurveyDefinition(surveyId);
+  });
+
+  ipcMain.handle('survey:submit', async (_, payload: unknown) => {
+    return surveyService.submitSurveyResponse(payload);
+  });
+
+  ipcMain.handle('survey:getResponse', async (_, surveyId?: string) => {
+    return surveyService.getSurveyResponse(surveyId);
   });
 }
