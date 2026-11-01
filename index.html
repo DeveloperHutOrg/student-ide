@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data: blob:; worker-src 'self' blob:; frame-src 'self' data: blob:; connect-src 'self' ws://localhost:5173 http://localhost:5173;"
+    />
+    <title>Student IDE</title>
+    <link rel="icon" type="image/svg+xml" href="/src/assets/branding/logo-icon.svg" />
+  </head>
+  <body class="bg-[#1e1e2e] text-[#cdd6f4] select-none overflow-hidden m-0 p-0 font-sans antialiased">
+    <div id="root" class="h-screen w-screen overflow-hidden flex flex-col"></div>
+    <script type="module" src="/src/renderer/index.tsx"></script>
+  </body>
+</html>
