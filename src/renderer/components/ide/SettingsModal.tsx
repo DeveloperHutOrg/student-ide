@@ -104,54 +104,54 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 select-none">
-      <div className="w-full max-w-xl bg-[#181825] border border-[#313244] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 select-none animate-fade-in">
+      <div className="w-full max-w-xl bg-[#0F172A] border border-[#1E293B] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        {/* Tricolour Accent Line */}
+        <div className="h-1 w-full bg-tricolour" />
+
         {/* Modal Header */}
-        <div className="h-14 px-6 border-b border-[#313244] flex items-center justify-between bg-[#11111b]/50">
-          <div className="flex items-center gap-2">
-            <GraduationCap className="w-5 h-5 text-[#89b4fa]" />
-            <h2 className="font-bold text-white text-base">Student IDE Settings</h2>
-          </div>
+        <div className="h-14 px-6 border-b border-[#1E293B] flex items-center justify-between bg-[#0B0F19]/50">
+          <h2 className="font-bold text-white text-base">Settings & Preferences</h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-[#a6adc8] hover:text-white hover:bg-[#313244] transition-colors"
+            className="p-1.5 rounded-lg text-[#94A3B8] hover:text-white hover:bg-[#1E293B] transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center px-6 border-b border-[#313244] gap-6 text-sm bg-[#181825]">
+        {/* Navigation Tabs */}
+        <div className="flex items-center px-6 border-b border-[#1E293B] gap-4 text-xs bg-[#0F172A]">
           <button
             onClick={() => setActiveTab('profile')}
-            className={`py-3 font-medium border-b-2 flex items-center gap-2 transition-colors ${
+            className={`py-3 font-semibold border-b-2 flex items-center gap-1.5 transition-colors cursor-pointer ${
               activeTab === 'profile'
-                ? 'border-[#89b4fa] text-[#89b4fa]'
-                : 'border-transparent text-[#a6adc8] hover:text-white'
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-[#94A3B8] hover:text-white'
             }`}
           >
             <User className="w-4 h-4" />
-            <span>Edit Profile</span>
+            <span>Profile</span>
           </button>
 
           <button
             onClick={() => setActiveTab('languages')}
-            className={`py-3 font-medium border-b-2 flex items-center gap-2 transition-colors ${
+            className={`py-3 font-semibold border-b-2 flex items-center gap-1.5 transition-colors cursor-pointer ${
               activeTab === 'languages'
-                ? 'border-[#89b4fa] text-[#89b4fa]'
-                : 'border-transparent text-[#a6adc8] hover:text-white'
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-[#94A3B8] hover:text-white'
             }`}
           >
             <Code2 className="w-4 h-4" />
-            <span>Languages ({enabledLangIds.size})</span>
+            <span>Languages</span>
           </button>
 
           <button
             onClick={() => setActiveTab('editor')}
-            className={`py-3 font-medium border-b-2 flex items-center gap-2 transition-colors ${
+            className={`py-3 font-semibold border-b-2 flex items-center gap-1.5 transition-colors cursor-pointer ${
               activeTab === 'editor'
-                ? 'border-[#89b4fa] text-[#89b4fa]'
-                : 'border-transparent text-[#a6adc8] hover:text-white'
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-[#94A3B8] hover:text-white'
             }`}
           >
             <Type className="w-4 h-4" />
@@ -160,10 +160,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
           <button
             onClick={() => setActiveTab('about')}
-            className={`py-3 font-medium border-b-2 flex items-center gap-2 transition-colors ${
+            className={`py-3 font-semibold border-b-2 flex items-center gap-1.5 transition-colors cursor-pointer ${
               activeTab === 'about'
-                ? 'border-[#89b4fa] text-[#89b4fa]'
-                : 'border-transparent text-[#a6adc8] hover:text-white'
+                ? 'border-indigo-500 text-indigo-400'
+                : 'border-transparent text-[#94A3B8] hover:text-white'
             }`}
           >
             <Info className="w-4 h-4" />
@@ -172,111 +172,119 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Modal Body */}
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="p-6 overflow-y-auto flex-1 space-y-6">
+          {/* TAB 1: Profile */}
           {activeTab === 'profile' && (
             <div className="space-y-5">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#a6adc8] mb-1.5">
+                <label className="block text-xs font-semibold text-[#CBD5E1] uppercase tracking-wider mb-2">
                   Student Name
                 </label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Student Name"
-                  className="w-full px-3 py-2 bg-[#11111b] border border-[#313244] rounded-xl text-white text-sm focus:outline-none focus:border-[#89b4fa]"
+                  placeholder="Your Name"
+                  className="w-full px-4 py-2.5 bg-[#0B0F19] border border-[#1E293B] rounded-xl text-white placeholder-[#64748B] focus:outline-none focus:border-indigo-500 text-sm"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#a6adc8] mb-1.5 flex items-center justify-between">
-                  <span>Current Class</span>
-                  <span className="text-xs text-[#89b4fa]">Class {studentClass}</span>
-                </label>
-                <div className="grid grid-cols-7 gap-2">
-                  {CLASSES.map((cls) => (
-                    <button
-                      key={cls}
-                      type="button"
-                      onClick={() => setStudentClass(cls)}
-                      className={`py-2 rounded-xl text-xs font-semibold transition-all ${
-                        studentClass === cls
-                          ? 'bg-[#89b4fa] text-[#11111b] scale-105 shadow-sm'
-                          : 'bg-[#11111b] text-[#a6adc8] border border-[#313244] hover:text-white'
-                      }`}
-                    >
-                      {cls}
-                    </button>
-                  ))}
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-xs font-semibold text-[#CBD5E1] uppercase tracking-wider">
+                    School Class
+                  </label>
+                  <span className="text-xs font-bold text-indigo-400">Class {studentClass}</span>
                 </div>
-              </div>
 
-              <div className="p-3.5 bg-[#11111b] rounded-xl border border-[#313244] text-xs text-[#a6adc8] space-y-1">
-                <div className="flex items-center gap-1.5 text-white font-medium">
-                  <ShieldCheck className="w-4 h-4 text-[#a6e3a1]" />
-                  <span>Persistent Local Storage</span>
+                <div className="grid grid-cols-7 gap-2">
+                  {CLASSES.map((cls) => {
+                    const isSelected = studentClass === cls;
+                    return (
+                      <button
+                        key={cls}
+                        type="button"
+                        onClick={() => setStudentClass(cls)}
+                        className={`py-2 rounded-xl font-bold text-sm transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                            : 'bg-[#0B0F19] text-[#94A3B8] border border-[#1E293B] hover:border-[#334155] hover:text-white'
+                        }`}
+                      >
+                        {cls}
+                      </button>
+                    );
+                  })}
                 </div>
-                <p className="text-[11px] text-[#a6adc8]">
-                  Changes are saved permanently to your local SQLite database. Existing projects, files, and language preferences remain preserved.
+                <p className="text-[11px] text-[#64748B] mt-2">
+                  Modifying your grade will automatically update syllabus recommendations.
                 </p>
               </div>
             </div>
           )}
 
+          {/* TAB 2: Languages */}
           {activeTab === 'languages' && (
-            <div className="space-y-2">
-              <p className="text-xs text-[#a6adc8] mb-3">
-                Toggle languages to display in your IDE. Suggestions are tailored for Class {studentClass}.
-              </p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#94A3B8]">
+                  Select the languages you want active in your toolbar:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setEnabledLangIds(new Set(Array.from(suggestedIds)))}
+                  className="text-xs text-indigo-400 hover:underline font-medium cursor-pointer"
+                >
+                  Class {studentClass} Suggestions
+                </button>
+              </div>
 
-              {ALL_SUPPORTED_LANGUAGES.map((lang) => {
-                const isSelected = enabledLangIds.has(lang.id);
-                const isSuggested = suggestedIds.has(lang.id);
+              <div className="space-y-2">
+                {ALL_SUPPORTED_LANGUAGES.map((lang) => {
+                  const isEnabled = enabledLangIds.has(lang.id);
+                  const isSuggested = suggestedIds.has(lang.id);
 
-                return (
-                  <div
-                    key={lang.id}
-                    onClick={() => toggleLanguage(lang.id)}
-                    className={`p-3 rounded-xl border cursor-pointer flex items-center justify-between transition-all ${
-                      isSelected
-                        ? 'bg-[#1e1e2e] border-[#89b4fa]'
-                        : 'bg-[#11111b] border-[#313244] opacity-60 hover:opacity-100'
-                    }`}
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-white text-xs">{lang.name}</span>
-                        <span className="text-[11px] font-mono text-[#6c7086]">{lang.extension}</span>
+                  return (
+                    <div
+                      key={lang.id}
+                      onClick={() => toggleLanguage(lang.id)}
+                      className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-colors ${
+                        isEnabled
+                          ? 'bg-indigo-950/30 border-indigo-500/40 text-white'
+                          : 'bg-[#0B0F19] border-[#1E293B] text-[#94A3B8] hover:border-[#334155]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xs font-bold">{lang.name}</span>
                         {isSuggested && (
-                          <span className="text-[10px] bg-[#89b4fa]/20 text-[#89b4fa] px-1.5 py-0.2 rounded-full flex items-center gap-1">
-                            <Sparkles className="w-2.5 h-2.5" />
-                            Suggested
+                          <span className="text-[9px] bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.2 rounded-full font-semibold">
+                            Syllabus
                           </span>
                         )}
                       </div>
-                      <span className="text-[11px] text-[#a6adc8] block mt-0.5">{lang.description}</span>
-                    </div>
 
-                    <div
-                      className={`w-5 h-5 rounded flex items-center justify-center border ${
-                        isSelected
-                          ? 'bg-[#89b4fa] border-[#89b4fa] text-[#11111b]'
-                          : 'border-[#45475a] bg-[#181825]'
-                      }`}
-                    >
-                      {isSelected && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                      <div
+                        className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+                          isEnabled
+                            ? 'bg-indigo-600 border-indigo-600 text-white'
+                            : 'border-[#334155] bg-[#0B0F19]'
+                        }`}
+                      >
+                        {isEnabled && <Check className="w-3 h-3 stroke-[3]" />}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           )}
 
+          {/* TAB 3: Editor */}
           {activeTab === 'editor' && (
             <div className="space-y-5">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-[#a6adc8] mb-2">
-                  Code Font Size
+                <label className="block text-xs font-semibold text-[#CBD5E1] uppercase tracking-wider mb-2">
+                  Editor Font Size
                 </label>
                 <div className="flex items-center gap-2">
                   {FONT_SIZES.map((size) => (
@@ -284,10 +292,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                       key={size}
                       type="button"
                       onClick={() => setCurrentFontSize(size)}
-                      className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+                      className={`flex-1 py-2 rounded-xl text-xs font-mono font-bold transition-colors cursor-pointer ${
                         currentFontSize === size
-                          ? 'bg-[#89b4fa] text-[#11111b]'
-                          : 'bg-[#11111b] border border-[#313244] text-[#a6adc8] hover:text-white'
+                          ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                          : 'bg-[#0B0F19] text-[#94A3B8] border border-[#1E293B] hover:border-[#334155] hover:text-white'
                       }`}
                     >
                       {size}px
@@ -296,49 +304,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </div>
 
-              <div className="p-3 bg-[#11111b] rounded-xl border border-[#313244] text-xs text-[#a6adc8]">
-                <span>Monaco Editor runs 100% locally from bundled assets without internet.</span>
+              <div className="p-4 rounded-xl bg-[#0B0F19] border border-[#1E293B] space-y-1">
+                <span className="text-xs font-semibold text-white block">Keyboard Shortcuts</span>
+                <div className="grid grid-cols-2 gap-2 text-xs text-[#94A3B8] font-mono pt-2">
+                  <div>Ctrl + S: Save file</div>
+                  <div>F5: Run program</div>
+                  <div>Ctrl + Shift + A: Admin Portal</div>
+                  <div>Ctrl + F: Search in editor</div>
+                </div>
               </div>
             </div>
           )}
 
+          {/* TAB 4: About Platform */}
           {activeTab === 'about' && (
             <div className="space-y-4">
-              <div className="p-4 bg-[#1e1e2e] border border-[#313244] rounded-xl space-y-2">
+              <div className="p-4 rounded-xl bg-[#0B0F19] border border-[#1E293B] space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#89b4fa] to-[#b4befe] flex items-center justify-center text-[#11111b] font-bold text-sm">
-                    V
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-white text-sm">Vasu</h3>
-                    <p className="text-[11px] text-[#89b4fa]">Founder of Student IDE</p>
-                  </div>
+                  <span className="font-bold text-white text-sm">STUDENT IDE</span>
+                  <span className="text-[10px] bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded-full font-mono">
+                    v1.0.0
+                  </span>
                 </div>
-                <p className="text-xs text-[#a6adc8] leading-relaxed pt-1">
-                  A developer and technology enthusiast interested in software development and building useful technology for students.
+                <p className="text-xs text-[#94A3B8] leading-relaxed">
+                  INDIA'S FIRST STUDENT-FRIENDLY OFFLINE IDE. A complete coding environment designed for school students, with offline programming tools.
                 </p>
-              </div>
-
-              <div className="p-4 bg-[#11111b] border border-[#313244] rounded-xl space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-white font-medium text-xs">
-                    <Globe className="w-4 h-4 text-[#89dceb]" />
-                    <span>DeveloperHut</span>
-                  </div>
-                  <span className="text-[11px] text-[#6c7086] font-mono">https://developerhut.in</span>
-                </div>
-                <p className="text-xs text-[#a6adc8] leading-relaxed">
-                  Student IDE is connected to the broader development vision of DeveloperHut. DeveloperHut focuses on creating digital products, software solutions and technology experiences.
-                </p>
-                <div className="pt-1 flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleVisitDeveloperHut}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#89b4fa] hover:bg-[#b4befe] text-[#11111b] text-xs font-semibold transition-all"
-                  >
-                    <span>Visit DeveloperHut</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </button>
+                <div className="pt-2 flex items-center justify-between text-xs">
+                  <span className="text-emerald-400 font-semibold">Proudly Built in India 🇮🇳</span>
                   {onOpenAbout && (
                     <button
                       type="button"
@@ -346,9 +338,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         onClose();
                         onOpenAbout();
                       }}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-[#313244] hover:border-[#89b4fa] text-xs text-[#cdd6f4] transition-colors"
+                      className="text-indigo-400 hover:underline font-semibold cursor-pointer"
                     >
-                      <span>Full Founder Page</span>
+                      <span>Full About Page</span>
                     </button>
                   )}
                 </div>
@@ -358,11 +350,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="h-14 px-6 border-t border-[#313244] bg-[#11111b] flex items-center justify-between">
+        <div className="h-14 px-6 border-t border-[#1E293B] bg-[#0B0F19] flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-xs text-[#a6adc8] hover:text-white"
+              className="px-4 py-2 text-xs text-[#94A3B8] hover:text-white cursor-pointer"
             >
               Close
             </button>
@@ -374,9 +366,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   onOpenAdmin();
                 }}
                 title="Teacher & Administrator Portal (Ctrl+Shift+A)"
-                className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] text-[#6c7086] hover:text-[#89b4fa] hover:bg-[#313244]/40 rounded-lg transition-colors border border-transparent hover:border-[#313244]"
+                className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] text-[#64748B] hover:text-indigo-400 hover:bg-[#1E293B] rounded-lg transition-colors border border-transparent hover:border-[#1E293B] cursor-pointer"
               >
-                <ShieldCheck className="w-3.5 h-3.5 text-[#89b4fa]" />
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
                 <span>Admin Portal</span>
               </button>
             )}
@@ -385,7 +377,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {activeTab !== 'about' && (
             <button
               onClick={handleSaveAll}
-              className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#89b4fa] hover:bg-[#b4befe] text-[#11111b] text-xs font-semibold shadow-md transition-all"
+              className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md transition-all cursor-pointer"
             >
               {saveSuccess ? (
                 <>

@@ -4,14 +4,16 @@ import {
   Square, 
   Save, 
   Settings, 
-  Layout, 
   Eye, 
   User, 
   Terminal as TerminalIcon,
   Code,
   Info,
   ClipboardList,
-  CheckCircle2
+  CheckCircle2,
+  Home,
+  WifiOff,
+  Sparkles
 } from 'lucide-react';
 import { StudentProfile, SupportedLanguageId } from '@/common/types';
 import { BrandLogo } from '../common/BrandLogo';
@@ -33,8 +35,8 @@ interface NavbarProps {
   onOpenSettings: () => void;
   onOpenAbout: () => void;
   activeFileName?: string;
-  activeView: 'editor' | 'survey';
-  onViewChange: (view: 'editor' | 'survey') => void;
+  activeView: 'dashboard' | 'editor' | 'survey';
+  onViewChange: (view: 'dashboard' | 'editor' | 'survey') => void;
   isSurveyCompleted: boolean;
 }
 
@@ -62,97 +64,112 @@ export const Navbar: React.FC<NavbarProps> = ({
   const isWebTech = activeLanguage === 'html' || activeLanguage === 'css';
 
   return (
-    <header className="h-12 bg-[#181825] border-b border-[#313244] px-3 flex items-center justify-between select-none shrink-0 z-20">
-      {/* Left: App Logo & Student Profile Badge */}
+    <header className="h-13 bg-[#0B0F19] border-b border-[#1E293B] px-3.5 flex items-center justify-between select-none shrink-0 z-20">
+      {/* Left: App Logo, Branding & Main View Tabs */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2.5">
-          <BrandLogo size={26} />
-          <span className="font-bold text-white text-sm hidden sm:inline tracking-tight">
-            Student <span className="text-[#89b4fa]">IDE</span>
-          </span>
+        {/* Brand Logo & Title */}
+        <div 
+          onClick={() => onViewChange('dashboard')}
+          className="flex items-center gap-2.5 cursor-pointer group"
+          title="Student IDE - India's First Student-Friendly Offline IDE"
+        >
+          <BrandLogo size={28} />
+          <div className="flex flex-col">
+            <span className="font-extrabold text-white text-sm tracking-tight flex items-center gap-1.5">
+              STUDENT <span className="text-brand-gradient">IDE</span>
+            </span>
+            <span className="text-[9px] text-[#64748B] tracking-wider uppercase font-bold hidden lg:inline">
+              Learn. Code. Build.
+            </span>
+          </div>
         </div>
 
-        <div className="h-4 w-px bg-[#313244]" />
+        <div className="h-5 w-px bg-[#1E293B]" />
 
         {/* Profile Badge - clickable to edit profile */}
         <button
           onClick={onOpenSettings}
-          title="Click to change profile or class"
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#11111b] hover:bg-[#313244] border border-[#313244] text-xs text-[#cdd6f4] transition-colors"
+          title="Click to edit profile or class"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0F172A] hover:bg-[#1E293B] border border-[#1E293B] text-xs text-[#CBD5E1] transition-colors cursor-pointer"
         >
-          <User className="w-3.5 h-3.5 text-[#89b4fa]" />
-          <span className="font-medium max-w-[100px] truncate">
+          <User className="w-3.5 h-3.5 text-indigo-400" />
+          <span className="font-medium max-w-[90px] truncate">
             {profile ? profile.student_name : 'Student'}
           </span>
-          <span className="text-[#a6adc8] bg-[#313244] px-1.5 py-0.2 rounded text-[10px]">
+          <span className="text-[#94A3B8] bg-[#1E293B] px-1.5 py-0.2 rounded text-[10px] font-semibold">
             Class {profile ? profile.student_class : '8'}
           </span>
         </button>
 
-        <div className="h-4 w-px bg-[#313244]" />
+        <div className="h-5 w-px bg-[#1E293B]" />
 
-        {/* Navigation Tabs: Editor & Survey */}
-        <div className="flex items-center gap-1 bg-[#11111b] p-0.5 rounded-lg border border-[#313244]">
+        {/* View Switcher: Dashboard, Editor, Survey */}
+        <div className="flex items-center gap-1 bg-[#0F172A] p-0.5 rounded-lg border border-[#1E293B]">
+          {/* Dashboard Tab */}
+          <button
+            onClick={() => onViewChange('dashboard')}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+              activeView === 'dashboard'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-[#94A3B8] hover:text-white hover:bg-[#1E293B]'
+            }`}
+            title="Open Student Dashboard"
+          >
+            <Home className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Home</span>
+          </button>
+
+          {/* Editor Tab */}
           <button
             onClick={() => onViewChange('editor')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
               activeView === 'editor'
-                ? 'bg-[#313244] text-white shadow-sm'
-                : 'text-[#a6adc8] hover:text-[#cdd6f4]'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-[#94A3B8] hover:text-white hover:bg-[#1E293B]'
             }`}
             title="Switch to Code Editor"
           >
-            <Code className="w-3.5 h-3.5 text-[#89b4fa]" />
+            <Code className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Editor</span>
           </button>
 
+          {/* Survey Tab */}
           <button
             onClick={() => onViewChange('survey')}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold transition-all cursor-pointer ${
               activeView === 'survey'
-                ? 'bg-[#313244] text-white shadow-sm'
-                : 'text-[#a6adc8] hover:text-[#cdd6f4]'
+                ? 'bg-indigo-600 text-white shadow-sm'
+                : 'text-[#94A3B8] hover:text-white hover:bg-[#1E293B]'
             }`}
-            title={isSurveyCompleted ? 'Survey completed (Click to view)' : 'Survey feedback (Incomplete - click to submit)'}
+            title={isSurveyCompleted ? 'Survey completed (Click to view)' : 'Survey feedback (Pending)'}
           >
-            <ClipboardList className="w-3.5 h-3.5 text-[#cba6f7]" />
-            <span>Survey</span>
+            <ClipboardList className="w-3.5 h-3.5 text-purple-400" />
+            <span className="hidden sm:inline">Survey</span>
 
-            {/* Completion Indicator: Green tick when submitted, clear incomplete indicator before submission */}
             {isSurveyCompleted ? (
               <CheckCircle2
-                className="w-3.5 h-3.5 text-[#a6e3a1] stroke-[2.5]"
-                title="Feedback successfully submitted"
+                className="w-3.5 h-3.5 text-emerald-400 stroke-[2.5]"
+                title="Feedback submitted"
               />
             ) : (
               <span
-                className="w-2 h-2 rounded-full bg-[#fab387] animate-pulse"
-                title="Feedback incomplete"
+                className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"
+                title="Feedback pending"
               />
             )}
           </button>
         </div>
       </div>
 
-      {/* Center: File name & Language Switcher (in Editor mode) OR Survey Title (in Survey mode) */}
+      {/* Center: File name & Language Switcher (in Editor mode) OR View Title */}
       <div className="flex items-center gap-2">
-        {activeView === 'survey' ? (
-          <div className="flex items-center gap-2 px-3 py-1 bg-[#11111b] rounded-lg border border-[#313244] text-xs text-[#a6adc8]">
-            <ClipboardList className="w-3.5 h-3.5 text-[#cba6f7]" />
-            <span className="font-medium text-[#cdd6f4]">Student Feedback Survey</span>
-            {isSurveyCompleted ? (
-              <span className="text-[10px] bg-[#a6e3a1]/15 text-[#a6e3a1] px-1.5 py-0.2 rounded font-medium">Completed</span>
-            ) : (
-              <span className="text-[10px] bg-[#fab387]/15 text-[#fab387] px-1.5 py-0.2 rounded font-medium">Pending</span>
-            )}
-          </div>
-        ) : (
+        {activeView === 'editor' ? (
           <>
             {activeFileName && (
-              <div className="flex items-center gap-1.5 px-3 py-1 bg-[#11111b] rounded-lg border border-[#313244] text-xs">
-                <span className="text-[#cdd6f4] font-mono">{activeFileName}</span>
+              <div className="flex items-center gap-1.5 px-3 py-1 bg-[#0F172A] rounded-lg border border-[#1E293B] text-xs">
+                <span className="text-[#F8FAFC] font-mono">{activeFileName}</span>
                 {isDirty && (
-                  <span className="w-2 h-2 rounded-full bg-[#f9e2af]" title="Unsaved changes" />
+                  <span className="w-2 h-2 rounded-full bg-amber-400" title="Unsaved changes" />
                 )}
               </div>
             )}
@@ -160,7 +177,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <select
               value={activeLanguage}
               onChange={(e) => onLanguageChange(e.target.value as SupportedLanguageId)}
-              className="bg-[#11111b] border border-[#313244] text-xs text-[#cdd6f4] px-2.5 py-1 rounded-lg focus:outline-none focus:border-[#89b4fa] cursor-pointer"
+              className="bg-[#0F172A] border border-[#1E293B] text-xs text-[#CBD5E1] px-2.5 py-1 rounded-lg focus:outline-none focus:border-indigo-500 cursor-pointer font-mono"
             >
               {availableLanguages.map((lang) => (
                 <option key={lang} value={lang}>
@@ -169,29 +186,45 @@ export const Navbar: React.FC<NavbarProps> = ({
               ))}
             </select>
           </>
+        ) : activeView === 'dashboard' ? (
+          <div className="hidden md:flex items-center gap-2 text-xs text-[#94A3B8]">
+            <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+            <span className="font-medium text-white">Student Hub & Available Languages</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-3 py-1 bg-[#0F172A] rounded-lg border border-[#1E293B] text-xs text-[#94A3B8]">
+            <ClipboardList className="w-3.5 h-3.5 text-purple-400" />
+            <span className="font-medium text-white">School Feedback Survey</span>
+            {isSurveyCompleted ? (
+              <span className="text-[10px] bg-emerald-500/15 text-emerald-400 px-1.5 py-0.2 rounded font-semibold">Completed</span>
+            ) : (
+              <span className="text-[10px] bg-amber-500/15 text-amber-400 px-1.5 py-0.2 rounded font-semibold">Pending</span>
+            )}
+          </div>
         )}
       </div>
 
-      {/* Right: Actions (Run, Stop, Save, Panels, Settings) */}
+      {/* Right: Actions (Run, Stop, Save, Offline Pill, Settings) */}
       <div className="flex items-center gap-2">
-        {activeView === 'survey' ? (
-          <button
-            onClick={() => onViewChange('editor')}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#11111b] border border-[#313244] text-[#89b4fa] hover:text-white hover:border-[#89b4fa] transition-colors text-xs font-medium"
-          >
-            <Code className="w-3.5 h-3.5" />
-            <span>Back to Editor</span>
-          </button>
-        ) : (
+        {/* Offline Status Badge */}
+        <div 
+          className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-950/40 border border-emerald-500/30 text-emerald-400 text-xs font-semibold"
+          title="All compilers and databases operate 100% offline on your device"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <span>100% Offline</span>
+        </div>
+
+        {activeView === 'editor' && (
           <>
             {/* Save button */}
             <button
               onClick={onSave}
               title="Save File (Ctrl+S)"
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
                 isDirty
-                  ? 'bg-[#11111b] border-[#f9e2af] text-[#f9e2af] hover:bg-[#f9e2af]/10'
-                  : 'bg-[#11111b] border-[#313244] text-[#a6adc8] hover:text-white hover:border-[#45475a]'
+                  ? 'bg-[#0F172A] border-amber-500 text-amber-300 hover:bg-amber-500/10'
+                  : 'bg-[#0F172A] border-[#1E293B] text-[#94A3B8] hover:text-white hover:border-[#334155]'
               }`}
             >
               <Save className="w-3.5 h-3.5" />
@@ -202,8 +235,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             {!isRunning ? (
               <button
                 onClick={onRun}
-                title="Run Code (F5)"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#a6e3a1] hover:bg-[#94e2d5] text-[#11111b] text-xs font-semibold shadow-sm transition-all"
+                title="Run Program (F5)"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5 fill-current" />
                 <span>{isWebTech ? 'Preview' : 'Run'}</span>
@@ -211,24 +244,24 @@ export const Navbar: React.FC<NavbarProps> = ({
             ) : (
               <button
                 onClick={onStop}
-                title="Stop Program"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#f38ba8] hover:bg-[#eba0ac] text-[#11111b] text-xs font-semibold shadow-sm animate-pulse transition-all"
+                title="Stop Execution (Terminates running process)"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-md shadow-rose-600/20 animate-pulse transition-all cursor-pointer"
               >
                 <Square className="w-3.5 h-3.5 fill-current" />
                 <span>Stop</span>
               </button>
             )}
 
-            <div className="h-4 w-px bg-[#313244]" />
+            <div className="h-4 w-px bg-[#1E293B]" />
 
             {/* HTML/CSS Preview Toggle */}
             <button
               onClick={onTogglePreview}
               title={showPreview ? 'Hide Web Preview' : 'Show Web Preview'}
-              className={`p-1.5 rounded-lg border text-xs transition-colors ${
+              className={`p-1.5 rounded-lg border text-xs transition-colors cursor-pointer ${
                 showPreview
-                  ? 'bg-[#89dceb]/20 border-[#89dceb] text-[#89dceb]'
-                  : 'bg-[#11111b] border-[#313244] text-[#a6adc8] hover:text-white'
+                  ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
+                  : 'bg-[#0F172A] border-[#1E293B] text-[#94A3B8] hover:text-white'
               }`}
             >
               <Eye className="w-4 h-4" />
@@ -238,10 +271,10 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               onClick={onToggleTerminal}
               title={showTerminal ? 'Hide Terminal' : 'Show Terminal'}
-              className={`p-1.5 rounded-lg border text-xs transition-colors ${
+              className={`p-1.5 rounded-lg border text-xs transition-colors cursor-pointer ${
                 showTerminal
-                  ? 'bg-[#89b4fa]/20 border-[#89b4fa] text-[#89b4fa]'
-                  : 'bg-[#11111b] border-[#313244] text-[#a6adc8] hover:text-white'
+                  ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300'
+                  : 'bg-[#0F172A] border-[#1E293B] text-[#94A3B8] hover:text-white'
               }`}
             >
               <TerminalIcon className="w-4 h-4" />
@@ -252,18 +285,18 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* About button */}
         <button
           onClick={onOpenAbout}
-          title="About the Founder & Student IDE"
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#11111b] border border-[#313244] text-[#a6adc8] hover:text-white hover:border-[#89b4fa] transition-colors text-xs font-medium"
+          title="About Student IDE & DeveloperHut"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[#0F172A] border border-[#1E293B] text-[#94A3B8] hover:text-white hover:border-indigo-500 transition-colors text-xs font-medium cursor-pointer"
         >
-          <Info className="w-3.5 h-3.5 text-[#89b4fa]" />
+          <Info className="w-3.5 h-3.5 text-indigo-400" />
           <span className="hidden sm:inline">About</span>
         </button>
 
         {/* Settings button */}
         <button
           onClick={onOpenSettings}
-          title="Settings & Profile"
-          className="p-1.5 rounded-lg bg-[#11111b] border border-[#313244] text-[#a6adc8] hover:text-white hover:border-[#45475a] transition-colors"
+          title="Settings, Profile & Preferences"
+          className="p-1.5 rounded-lg bg-[#0F172A] border border-[#1E293B] text-[#94A3B8] hover:text-white hover:border-[#334155] transition-colors cursor-pointer"
         >
           <Settings className="w-4 h-4" />
         </button>

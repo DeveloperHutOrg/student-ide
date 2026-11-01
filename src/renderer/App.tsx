@@ -9,30 +9,34 @@ import {
   ExecutionResult 
 } from '@/common/types';
 import { STARTER_TEMPLATES } from '@/common/languages';
+import { WelcomeSplash } from './components/welcome/WelcomeSplash';
 import { ProfileSetup } from './components/onboarding/ProfileSetup';
 import { LanguageSelection } from './components/onboarding/LanguageSelection';
+import { DashboardView } from './components/dashboard/DashboardView';
 import { Navbar } from './components/ide/Navbar';
 import { Sidebar } from './components/ide/Sidebar';
 import { Editor } from './components/ide/Editor';
 import { Terminal } from './components/ide/Terminal';
 import { WebPreview } from './components/ide/WebPreview';
+import { StatusBar } from './components/ide/StatusBar';
 import { SettingsModal } from './components/ide/SettingsModal';
 import { AboutModal } from './components/about/AboutModal';
 import { SurveyView } from './components/survey/SurveyView';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AdminAuthModal } from './components/admin/AdminAuthModal';
 
-type AppStep = 'loading' | 'onboarding_profile' | 'onboarding_languages' | 'ide';
+type AppStep = 'splash' | 'onboarding_profile' | 'onboarding_languages' | 'ide';
 
 export const App: React.FC = () => {
   // Navigation & Profile State
-  const [step, setStep] = useState<AppStep>('loading');
+  const [step, setStep] = useState<AppStep>('splash');
+  const [nextStepAfterSplash, setNextStepAfterSplash] = useState<AppStep>('onboarding_profile');
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [pendingProfile, setPendingProfile] = useState<{ name: string; studentClass: number } | null>(null);
   const [languages, setLanguages] = useState<LanguagePreference[]>([]);
 
-  // Navigation View: Editor vs Survey
-  const [activeView, setActiveView] = useState<'editor' | 'survey'>('editor');
+  // Navigation View: Dashboard vs Editor vs Survey
+  const [activeView, setActiveView] = useState<'dashboard' | 'editor' | 'survey'>('editor');
   const [surveyCompleted, setSurveyCompleted] = useState<boolean>(false);
 
   // Admin Section State
@@ -44,6 +48,7 @@ export const App: React.FC = () => {
   const [projectDir, setProjectDir] = useState<string>('');
   const [files, setFiles] = useState<FileItem[]>([]);
   const [activeFile, setActiveFile] = useState<ActiveFile | null>(null);
+  const [cursorPos, setCursorPos] = useState({ line: 1, column: 1 });
 
   // Execution & Terminal State
   const [isRunning, setIsRunning] = useState(false);
@@ -68,7 +73,7 @@ export const App: React.FC = () => {
       try {
         if (!window.api) {
           console.warn('Electron API not found (running in standard browser)');
-          setStep('onboarding_profile');
+          setNextStepAfterSplash('onboarding_profile');
           return;
         }
 
@@ -93,10 +98,9 @@ export const App: React.FC = () => {
           const prefs = await window.api.getLanguagePreferences();
           setLanguages(prefs);
 
-          // If onboarding is already completed, skip both profile setup and language selection
+          // If onboarding is already completed, prepare workspace and transition to IDE
           if (onboardingDone) {
-            setStep('ide');
-            // Asynchronously load workspace files without blocking IDE entry
+            setNextStepAfterSplash('ide');
             window.api.getDefaultProjectsDir()
               .then((defaultDir) => {
                 setProjectDir(defaultDir);
@@ -110,15 +114,15 @@ export const App: React.FC = () => {
 
           // Profile exists but language selection not completed yet: continue to Step 2
           setPendingProfile({ name: savedProfile.student_name, studentClass: savedProfile.student_class });
-          setStep('onboarding_languages');
+          setNextStepAfterSplash('onboarding_languages');
           return;
         }
 
         // Fresh launch - no profile found in SQLite
-        setStep('onboarding_profile');
+        setNextStepAfterSplash('onboarding_profile');
       } catch (err) {
         console.error('Failed to load initial data:', err);
-        setStep('onboarding_profile');
+        setNextStepAfterSplash('onboarding_profile');
       }
     }
 
@@ -312,6 +316,27 @@ export const App: React.FC = () => {
     }
   };
 
+  // Quick Start Language Card Handler from Dashboard
+  const handleQuickStart = async (language: SupportedLanguageId) => {
+    if (!projectDir) {
+      const defaultDir = await window.api?.getDefaultProjectsDir();
+      if (defaultDir) setProjectDir(defaultDir);
+    }
+
+    const ext = language === 'python' ? '.py' : language === 'cpp' ? '.cpp' : language === 'html' ? '.html' : language === 'css' ? '.css' : language === 'javascript' ? '.js' : language === 'sql' ? '.sql' : '.php';
+    const baseName = language === 'html' ? 'index.html' : language === 'python' ? 'main.py' : language === 'cpp' ? 'program.cpp' : `code_${language}${ext}`;
+    
+    // Check if file already exists in files
+    const existing = files.find(f => f.name.toLowerCase() === baseName.toLowerCase());
+    if (existing) {
+      await handleFileSelect(existing);
+    } else {
+      await handleCreateFile(baseName, STARTER_TEMPLATES[language] || '');
+    }
+
+    setActiveView('editor');
+  };
+
   // Create Folder Handler
   const handleCreateFolder = async (folderName: string) => {
     if (!window.api || !projectDir) return;
@@ -348,7 +373,7 @@ export const App: React.FC = () => {
     }
   };
 
-  // Onboarding Step 1: Profile Submit - Saves profile permanently to local SQLite!
+  // Onboarding Step 1: Profile Submit - Saves profile permanently to local SQLite
   const handleProfileSubmit = async (name: string, studentClass: number) => {
     try {
       if (!window.api) return;
@@ -432,15 +457,13 @@ export const App: React.FC = () => {
     }
   };
 
-  // Render Loading
-  if (step === 'loading') {
+  // Render Splash Screen
+  if (step === 'splash') {
     return (
-      <div className="h-screen w-screen bg-[#1e1e2e] flex items-center justify-center text-white select-none">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#89b4fa] border-t-transparent rounded-full animate-spin" />
-          <span className="text-sm font-medium text-[#cdd6f4]">Starting Student IDE...</span>
-        </div>
-      </div>
+      <WelcomeSplash
+        onFinish={() => setStep(nextStepAfterSplash)}
+        studentName={profile?.student_name}
+      />
     );
   }
 
@@ -472,7 +495,7 @@ export const App: React.FC = () => {
 
   // Render Main IDE Workspace
   return (
-    <div className="h-screen w-screen bg-[#1e1e2e] flex flex-col overflow-hidden">
+    <div className="h-screen w-screen bg-[#0B0F19] text-[#F8FAFC] flex flex-col overflow-hidden">
       {/* Top Navbar */}
       <Navbar
         profile={profile}
@@ -500,14 +523,26 @@ export const App: React.FC = () => {
         isSurveyCompleted={surveyCompleted}
       />
 
-      {/* Main View: Survey View OR Code Editor Workspace */}
-      {activeView === 'survey' ? (
+      {/* Main View Area: Dashboard vs Survey vs Editor */}
+      {activeView === 'dashboard' ? (
+        <DashboardView
+          profile={profile}
+          files={files}
+          onOpenFile={handleFileSelect}
+          onQuickStart={handleQuickStart}
+          onOpenFolder={handleSelectFolder}
+          onOpenSettings={() => setSettingsOpen(true)}
+          onOpenAbout={() => setAboutOpen(true)}
+          onSwitchToEditor={() => setActiveView('editor')}
+          activeFileName={activeFile?.name}
+        />
+      ) : activeView === 'survey' ? (
         <SurveyView
           onBackToEditor={() => setActiveView('editor')}
           onSurveySubmitted={() => setSurveyCompleted(true)}
         />
       ) : (
-        /* Main IDE Workspace */
+        /* Main Code Editor Workspace */
         <div className="flex-1 flex overflow-hidden">
           {/* Left Sidebar */}
           <Sidebar
@@ -521,6 +556,8 @@ export const App: React.FC = () => {
             onCreateFolder={handleCreateFolder}
             onDeleteFile={handleDeleteFile}
             enabledLanguages={enabledLanguages}
+            onOpenSettings={() => setSettingsOpen(true)}
+            onOpenSurvey={() => setActiveView('survey')}
           />
 
           {/* Center / Right Split Area */}
@@ -540,12 +577,19 @@ export const App: React.FC = () => {
                   fontSize={fontSize}
                   onSave={handleSaveFile}
                   onRun={handleRunCode}
+                  onCursorChange={(line, col) => setCursorPos({ line, column: col })}
                 />
               ) : (
-                <div className="flex-1 bg-[#1e1e2e] flex items-center justify-center text-[#6c7086] text-sm select-none">
-                  <div className="text-center">
-                    <p className="text-base text-[#a6adc8] font-medium mb-1">No file open</p>
-                    <p className="text-xs">Select a file from the explorer on the left or create a new one.</p>
+                <div className="flex-1 bg-[#0B0F19] flex items-center justify-center text-[#64748B] text-sm select-none">
+                  <div className="text-center space-y-3">
+                    <p className="text-base text-[#CBD5E1] font-semibold">No file currently open</p>
+                    <p className="text-xs text-[#94A3B8]">Select a file from the explorer on the left or launch from the Dashboard.</p>
+                    <button
+                      onClick={() => setActiveView('dashboard')}
+                      className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-md transition-colors cursor-pointer"
+                    >
+                      Go to Dashboard
+                    </button>
                   </div>
                 </div>
               )}
@@ -581,6 +625,17 @@ export const App: React.FC = () => {
         </div>
       )}
 
+      {/* Global Bottom Status Bar */}
+      <StatusBar
+        fileName={activeFile?.name}
+        language={activeFile?.language || 'python'}
+        line={cursorPos.line}
+        column={cursorPos.column}
+        isDirty={activeFile?.isDirty || false}
+        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenAbout={() => setAboutOpen(true)}
+      />
+
       {/* Settings & Profile Modal */}
       <SettingsModal
         isOpen={settingsOpen}
@@ -595,11 +650,11 @@ export const App: React.FC = () => {
         onOpenAdmin={() => setAdminAuthModalOpen(true)}
       />
 
-      {/* About the Founder & Student IDE Modal */}
+      {/* About DeveloperHut & Student IDE Modal */}
       <AboutModal
         isOpen={aboutOpen}
         onClose={() => setAboutOpen(false)}
-        defaultTab="founder"
+        defaultTab="ide"
       />
 
       {/* Admin Authentication Gate Modal */}
@@ -615,7 +670,7 @@ export const App: React.FC = () => {
 
       {/* Full-Screen Offline Admin Survey Dashboard */}
       {adminDashboardOpen && (
-        <div className="fixed inset-0 z-40 bg-[#1e1e2e] flex flex-col">
+        <div className="fixed inset-0 z-40 bg-[#0B0F19] flex flex-col">
           <AdminDashboard
             token={adminToken}
             onClose={() => setAdminDashboardOpen(false)}

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef } from 'react';
 import MonacoEditor, { OnMount } from '@monaco-editor/react';
 import { SupportedLanguageId } from '@/common/types';
 
@@ -10,6 +10,7 @@ interface EditorProps {
   fontSize?: number;
   onSave?: () => void;
   onRun?: () => void;
+  onCursorChange?: (line: number, column: number) => void;
 }
 
 export const Editor: React.FC<EditorProps> = ({
@@ -20,6 +21,7 @@ export const Editor: React.FC<EditorProps> = ({
   fontSize = 14,
   onSave,
   onRun,
+  onCursorChange,
 }) => {
   const editorRef = useRef<any>(null);
 
@@ -49,10 +51,17 @@ export const Editor: React.FC<EditorProps> = ({
     editor.addCommand(monaco.KeyCode.F5, () => {
       if (onRun) onRun();
     });
+
+    // Track cursor movements for status bar
+    editor.onDidChangeCursorPosition((e) => {
+      if (onCursorChange) {
+        onCursorChange(e.position.lineNumber, e.position.column);
+      }
+    });
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#1e1e2e] overflow-hidden relative">
+    <div className="flex-1 flex flex-col h-full bg-[#0B0F19] overflow-hidden relative">
       {/* Monaco Editor Container */}
       <div className="flex-1 w-full h-full">
         <MonacoEditor
@@ -81,20 +90,6 @@ export const Editor: React.FC<EditorProps> = ({
             bracketPairColorization: { enabled: true },
           }}
         />
-      </div>
-
-      {/* Editor Footer Status Bar */}
-      <div className="h-6 bg-[#181825] border-t border-[#313244] px-3 flex items-center justify-between text-[11px] text-[#a6adc8] select-none shrink-0">
-        <div className="flex items-center gap-3">
-          <span>{fileName || 'Untitled'}</span>
-          <span>•</span>
-          <span className="uppercase text-[#89b4fa] font-mono">{language}</span>
-        </div>
-        <div className="flex items-center gap-3 font-mono">
-          <span>UTF-8</span>
-          <span>Spaces: 4</span>
-          <span className="text-[#6c7086]">Ctrl+S Save | F5 Run</span>
-        </div>
       </div>
     </div>
   );
