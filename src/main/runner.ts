@@ -45,6 +45,8 @@ export function resolveRuntimePath(language: SupportedLanguageId): string | null
       const bundled = path.join(basePath, 'python', 'python.exe');
       if (fs.existsSync(bundled)) return bundled;
 
+      if (isPackaged) return null;
+
       // Common Python locations on Windows
       const localAppPython = path.join(os.homedir(), 'AppData/Local/Programs/Python/Python311/python.exe');
       if (fs.existsSync(localAppPython)) return localAppPython;
@@ -52,7 +54,7 @@ export function resolveRuntimePath(language: SupportedLanguageId): string | null
       const localAppPython312 = path.join(os.homedir(), 'AppData/Local/Programs/Python/Python312/python.exe');
       if (fs.existsSync(localAppPython312)) return localAppPython312;
 
-      return 'python'; // Fallback to PATH
+      return 'python'; // Fallback to PATH in dev
     }
 
     case 'javascript': {
@@ -64,16 +66,37 @@ export function resolveRuntimePath(language: SupportedLanguageId): string | null
       const bundledGpp = path.join(basePath, 'mingw', 'bin', 'g++.exe');
       if (fs.existsSync(bundledGpp)) return bundledGpp;
       
+      if (isPackaged) return null;
+
       const commonMinGW = 'C:\\MinGW\\bin\\g++.exe';
       if (fs.existsSync(commonMinGW)) return commonMinGW;
 
-      return 'g++'; // Fallback to PATH
+      return 'g++'; // Fallback to PATH in dev
     }
 
     case 'php': {
       const bundledPhp = path.join(basePath, 'php', 'php.exe');
       if (fs.existsSync(bundledPhp)) return bundledPhp;
-      return 'php'; // Fallback to PATH
+
+      if (isPackaged) return null;
+
+      const commonPhpPaths = [
+        'C:\\php\\php.exe',
+        'C:\\tools\\php\\php.exe',
+        path.join(os.homedir(), 'AppData', 'Local', 'Programs', 'php', 'php.exe'),
+      ];
+      for (const p of commonPhpPaths) {
+        if (fs.existsSync(p)) return p;
+      }
+
+      try {
+        const { execSync } = require('child_process');
+        const whereOut = execSync('where.exe php 2>nul', { encoding: 'utf-8' }).trim();
+        const firstLine = whereOut.split(/\r?\n/)[0]?.trim();
+        if (firstLine && fs.existsSync(firstLine)) return firstLine;
+      } catch {}
+
+      return null;
     }
 
     case 'sql':
@@ -348,8 +371,28 @@ export async function executeCode(
           ELECTRON_RUN_AS_NODE: '1',
         },
       });
+    } else if (language === 'php') {
+      // Execute with PHP CLI using -f flag, ensuring php directory is in PATH for DLLs
+      const phpDir = path.dirname(runtimePath);
+      const args = ['-f', targetFilePath];
+      child = spawn(runtimePath, args, {
+        cwd: workingDir,
+        env: {
+          ...process.env,
+          PATH: `${phpDir};${process.env.PATH || ''}`,
+        },
+      });
+    } else if (language === 'python') {
+      const pyDir = path.dirname(runtimePath);
+      const args = [targetFilePath];
+      child = spawn(runtimePath, args, {
+        cwd: workingDir,
+        env: {
+          ...process.env,
+          PATH: `${pyDir};${process.env.PATH || ''}`,
+        },
+      });
     } else {
-      // Python, PHP
       const args = [targetFilePath];
       child = spawn(runtimePath, args, { cwd: workingDir });
     }

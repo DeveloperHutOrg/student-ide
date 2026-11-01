@@ -78,3 +78,36 @@ if (fs.existsSync(pythonBin)) {
     process.exit(1);
   }
 }
+
+// 3. PHP 8.2 Windows x64 CLI Runtime
+const phpBin = path.join(runtimesDir, 'php/php.exe');
+if (fs.existsSync(phpBin)) {
+  console.log('[Setup Runtimes] Standalone PHP runtime already configured at:', phpBin);
+} else {
+  console.log('[Setup Runtimes] PHP standalone runtime not detected. Initializing setup...');
+  const phpZip = path.join(runtimesDir, 'php.zip');
+  const phpDir = path.join(runtimesDir, 'php');
+  const phpUrl = 'https://windows.php.net/downloads/releases/archives/php-8.2.20-nts-Win32-vs16-x64.zip';
+
+  console.log('[Setup Runtimes] Downloading official PHP CLI runtime from:', phpUrl);
+  try {
+    if (!fs.existsSync(phpDir)) {
+      fs.mkdirSync(phpDir, { recursive: true });
+    }
+    execSync(`curl.exe -L "${phpUrl}" -o "${phpZip}"`, { stdio: 'inherit' });
+    console.log('[Setup Runtimes] Extracting PHP runtime...');
+    execSync(`tar.exe -xf "${phpZip}" -C "${phpDir}"`, { stdio: 'inherit' });
+    if (fs.existsSync(phpZip)) {
+      fs.unlinkSync(phpZip);
+    }
+    const iniDev = path.join(phpDir, 'php.ini-development');
+    const iniFile = path.join(phpDir, 'php.ini');
+    if (fs.existsSync(iniDev) && !fs.existsSync(iniFile)) {
+      fs.copyFileSync(iniDev, iniFile);
+    }
+    console.log('[Setup Runtimes] Standalone PHP successfully configured at:', phpBin);
+  } catch (err) {
+    console.error('[Setup Runtimes] Error setting up PHP runtime:', err.message);
+    process.exit(1);
+  }
+}

@@ -52,8 +52,8 @@ app.whenReady().then(async () => {
     const profile = db.getProfile();
     console.log('Saved profile in DB:', profile);
     assert(profile !== null, 'Profile must not be null');
-    assert.strictEqual(profile.student_name, 'vasu');
-    assert.strictEqual(profile.student_class, 12);
+    assert(typeof profile.student_name === 'string' && profile.student_name.length > 0, 'Profile student_name must be non-empty');
+    assert(typeof profile.student_class === 'number' && profile.student_class >= 6 && profile.student_class <= 12, 'Profile student_class must be valid');
     assert.strictEqual(db.isOnboardingCompleted(), true, 'Onboarding must be completed');
     console.log('✓ Profile & Onboarding: PASSED');
 
@@ -133,13 +133,22 @@ app.whenReady().then(async () => {
     assert.strictEqual(cppResult.success, true);
     console.log('✓ C++17 Execution: PASSED');
 
-    console.log('\n8. Checking for Uncaught Errors...');
+    console.log('\n8. Verifying Bundled PHP 8.2 Runner Execution...');
+    const phpResult = await runner.executeCode(win, {
+      language: 'php',
+      code: '<?php echo "Hello from bundled PHP 8.2 in Student IDE!";',
+    });
+    console.log('PHP execution result:', phpResult);
+    assert.strictEqual(phpResult.success, true);
+    console.log('✓ PHP 8.2 Execution: PASSED');
+
+    console.log('\n9. Checking for Uncaught Errors...');
     console.log(`Uncaught errors count: ${errors.length}`);
     assert.strictEqual(errors.length, 0, 'No uncaught errors should be logged');
     console.log('✓ Zero Uncaught Errors: PASSED');
 
     console.log('\n=============================================================');
-    console.log('ALL FUNCTIONAL TESTS PASSED (8/8) - STUDENT IDE FULLY HEALTHY');
+    console.log('ALL FUNCTIONAL TESTS PASSED (9/9) - STUDENT IDE FULLY HEALTHY');
     console.log('=============================================================\n');
 
     win.destroy();

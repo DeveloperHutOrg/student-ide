@@ -84,8 +84,13 @@ Student IDE V1 redistributes or incorporates third-party open-source components.
 - When Python is executed, Student IDE resolves the local or bundled Python runtime.
 - Python is licensed under the Python Software Foundation (PSF) License Agreement.
 
-### PHP (Runtime Limitation Notice)
-- Student IDE includes syntax highlighting and project templates for PHP.
-- PHP binaries are **not bundled** in the base installer to keep the distribution size compact.
-- If PHP is installed on the user workstation (or configured in `runtimes/php`), Student IDE executes it cleanly. If not present, the IDE outputs a friendly notification advising the user how to configure a PHP interpreter.
-- The PHP language is licensed under the PHP License v3.01.
+### PHP (Bundled Windows CLI Runtime)
+- **Component:** PHP 8.2 CLI (Win32-vs16-x64 NTS distribution)
+- **Location:** `runtimes/php/php.exe` (production `process.resourcesPath/runtimes/php/php.exe`)
+- **License:** The PHP License, version 3.01
+- **Copyright:** Copyright (c) 1999 - 2024 The PHP Group. All rights reserved.
+- **Mandatory Redistribution Notice (Section 6):**
+  > "This product includes PHP software, freely available from <http://www.php.net/software/>".
+- **Zend Engine Notice:**
+  > PHP includes the Zend Engine, freely available at <http://www.zend.com>.
+

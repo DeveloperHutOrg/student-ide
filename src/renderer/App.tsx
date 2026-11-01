@@ -258,6 +258,8 @@ export const App: React.FC = () => {
 
       if (language === 'html' || language === 'css') {
         setShowPreview(true);
+      } else {
+        setShowPreview(false);
       }
     } catch (err) {
       console.error('Failed to read file:', err);
@@ -290,6 +292,8 @@ export const App: React.FC = () => {
 
     if (activeFile.language === 'html' || activeFile.language === 'css') {
       setShowPreview(true);
+    } else {
+      setShowPreview(false);
     }
 
     try {
@@ -332,6 +336,8 @@ export const App: React.FC = () => {
 
     if (lang === 'html' || lang === 'css') {
       setShowPreview(true);
+    } else {
+      setShowPreview(false);
     }
   };
 
@@ -340,6 +346,12 @@ export const App: React.FC = () => {
     if (!projectDir) {
       const defaultDir = await window.api?.getDefaultProjectsDir();
       if (defaultDir) setProjectDir(defaultDir);
+    }
+
+    const isWeb = language === 'html' || language === 'css';
+    setShowPreview(isWeb);
+    if (!isWeb) {
+      setShowTerminal(true);
     }
 
     const ext = language === 'python' ? '.py' : language === 'cpp' ? '.cpp' : language === 'html' ? '.html' : language === 'css' ? '.css' : language === 'javascript' ? '.js' : language === 'sql' ? '.sql' : '.php';
