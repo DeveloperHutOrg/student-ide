@@ -22,7 +22,8 @@ import {
   ArrowLeft,
   Loader2,
   HardDriveDownload,
-  Info
+  Info,
+  Users
 } from 'lucide-react';
 import { 
   AdminSurveyStats, 
@@ -292,30 +293,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               <div className="bg-[#181825] border border-[#313244] rounded-2xl p-4 shadow-sm">
                 <div className="flex items-center justify-between text-xs text-[#a6adc8] mb-1.5">
-                  <span>Total Responses</span>
+                  <span>Total Submissions</span>
                   <Table className="w-4 h-4 text-[#89b4fa]" />
                 </div>
                 <div className="text-2xl font-bold text-white tracking-tight">
                   {stats?.totalResponses || 0}
                 </div>
                 <div className="text-[11px] text-[#6c7086] mt-1">
-                  Across all imported and local students
+                  Total survey submissions recorded
                 </div>
               </div>
 
               <div className="bg-[#181825] border border-[#313244] rounded-2xl p-4 shadow-sm">
                 <div className="flex items-center justify-between text-xs text-[#a6adc8] mb-1.5">
-                  <span>Local PC Response</span>
+                  <span>Participating Students</span>
+                  <Users className="w-4 h-4 text-[#fab387]" />
+                </div>
+                <div className="text-2xl font-bold text-[#fab387] tracking-tight">
+                  {stats?.uniqueStudents || stats?.totalResponses || 0}
+                </div>
+                <div className="text-[11px] text-[#6c7086] mt-1">
+                  Unique participating students
+                </div>
+              </div>
+
+              <div className="bg-[#181825] border border-[#313244] rounded-2xl p-4 shadow-sm">
+                <div className="flex items-center justify-between text-xs text-[#a6adc8] mb-1.5">
+                  <span>Local PC Submissions</span>
                   <User className="w-4 h-4 text-[#a6e3a1]" />
                 </div>
                 <div className="text-2xl font-bold text-[#a6e3a1] tracking-tight flex items-center gap-2">
                   <span>{stats?.localResponses || 0}</span>
                   {stats?.currentComputerSubmitted && (
-                    <CheckCircle2 className="w-5 h-5 text-[#a6e3a1]" title="Current student profile submitted" />
+                    <CheckCircle2 className="w-5 h-5 text-[#a6e3a1]" title="Local submissions recorded on this PC" />
                   )}
                 </div>
                 <div className="text-[11px] text-[#6c7086] mt-1">
-                  {stats?.currentComputerSubmitted ? 'This computer has submitted' : 'Pending local submission'}
+                  Submitted directly on this computer
                 </div>
               </div>
 
@@ -328,20 +342,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   {stats?.importedResponses || 0}
                 </div>
                 <div className="text-[11px] text-[#6c7086] mt-1">
-                  Transferred from other Student IDE laptops
-                </div>
-              </div>
-
-              <div className="bg-[#181825] border border-[#313244] rounded-2xl p-4 shadow-sm">
-                <div className="flex items-center justify-between text-xs text-[#a6adc8] mb-1.5">
-                  <span>Privacy Guarantee</span>
-                  <ShieldCheck className="w-4 h-4 text-[#89b4fa]" />
-                </div>
-                <div className="text-sm font-semibold text-white mt-1">
-                  100% Offline Database
-                </div>
-                <div className="text-[11px] text-[#a6adc8] mt-1">
-                  SQLite `%APPDATA%/student_ide.db`
+                  Transferred from other lab computers
                 </div>
               </div>
             </div>

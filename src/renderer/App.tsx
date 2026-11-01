@@ -499,6 +499,11 @@ export const App: React.FC = () => {
       if (window.api?.session) {
         await window.api.session.login({ studentId: profile?.id });
       }
+      // Refresh survey completion state for this logged-in student
+      if (window.api?.getSurveyStatus) {
+        const surveyStatus = await window.api.getSurveyStatus();
+        setSurveyCompleted(!!(surveyStatus && surveyStatus.hasSubmitted));
+      }
       const defaultDir = await window.api.getDefaultProjectsDir();
       setProjectDir(defaultDir);
       await loadWorkspaceFiles(defaultDir, profile?.student_class || 8);
@@ -521,6 +526,12 @@ export const App: React.FC = () => {
 
       if (window.api.session) {
         await window.api.session.login({ studentId: updated.id, name, studentClass });
+      }
+
+      // Check survey completion specifically for this switched student
+      if (window.api.getSurveyStatus) {
+        const surveyStatus = await window.api.getSurveyStatus();
+        setSurveyCompleted(!!(surveyStatus && surveyStatus.hasSubmitted));
       }
 
       const defaultDir = await window.api.getDefaultProjectsDir();
@@ -562,6 +573,10 @@ export const App: React.FC = () => {
       setLogoutConfirmOpen(false);
       setSettingsOpen(false);
       setActiveFile(null);
+      setSurveyCompleted(false); // Cleanly reset survey status on logout
+      if (window.api?.getProfile) {
+        window.api.getProfile().then((p) => setProfile(p)).catch(() => {});
+      }
       setStep('login');
     }
   };

@@ -36,9 +36,13 @@ export function getSurveyDefinition(surveyId: string = DEFAULT_SURVEY_ID): Surve
  * Checks whether the current student has submitted the survey.
  * Authoritative: resolves profile from local SQLite database.
  */
-export function getSurveyStatus(surveyId: string = DEFAULT_SURVEY_ID): SurveyStatus {
+/**
+ * Checks whether the specified (or currently active) student has submitted the survey.
+ * Authoritative: resolves profile from local SQLite database.
+ */
+export function getSurveyStatus(surveyId: string = DEFAULT_SURVEY_ID, studentId?: number): SurveyStatus {
   const db = initDatabase();
-  const profile = getProfile();
+  const profile = getProfile(studentId);
 
   const def = getSurveyDefinition(surveyId);
 
@@ -53,18 +57,18 @@ export function getSurveyStatus(surveyId: string = DEFAULT_SURVEY_ID): SurveySta
   }
 
   const stmt = db.prepare(`
-    SELECT id, submitted_at, status 
+    SELECT id, submitted_at, status, survey_version 
     FROM survey_responses 
     WHERE survey_id = ? AND student_profile_id = ?
   `);
-  const row = stmt.get(surveyId, profile.id) as { id: number; submitted_at: string; status: string } | undefined;
+  const row = stmt.get(surveyId, profile.id) as { id: number; submitted_at: string; status: string; survey_version: string } | undefined;
 
   return {
     hasSubmitted: !!row,
     submittedAt: row ? row.submitted_at : undefined,
     surveyId: def.id,
     surveyTitle: def.title,
-    surveyVersion: def.version,
+    surveyVersion: row?.survey_version || def.version,
     studentProfile: {
       id: profile.id,
       name: profile.student_name,
@@ -76,16 +80,16 @@ export function getSurveyStatus(surveyId: string = DEFAULT_SURVEY_ID): SurveySta
 /**
  * Retrieves the student's existing response if previously submitted.
  */
-export function getSurveyResponse(surveyId: string = DEFAULT_SURVEY_ID): SurveyResponseRecord | null {
+export function getSurveyResponse(surveyId: string = DEFAULT_SURVEY_ID, studentId?: number): SurveyResponseRecord | null {
   const db = initDatabase();
-  const profile = getProfile();
+  const profile = getProfile(studentId);
 
   if (!profile || !profile.id) {
     return null;
   }
 
   const stmt = db.prepare(`
-    SELECT id, survey_id, student_profile_id, student_name, student_class, answers_json, submitted_at, status
+    SELECT id, survey_id, survey_version, student_profile_id, student_name, student_class, answers_json, submitted_at, status
     FROM survey_responses
     WHERE survey_id = ? AND student_profile_id = ?
   `);
@@ -118,26 +122,27 @@ export function getSurveyResponse(surveyId: string = DEFAULT_SURVEY_ID): SurveyR
  * Submits the survey response.
  * - Validates input with Zod.
  * - Uses authoritative student profile from SQLite.
- * - Enforces unique submission checks.
+ * - Enforces unique submission checks per student and survey version.
  * - Executes insertion inside an atomic transaction.
  */
-export function submitSurveyResponse(payload: unknown): SurveySubmitResult {
+export function submitSurveyResponse(payload: unknown, studentId?: number): SurveySubmitResult {
   const db = initDatabase();
 
   // 1. Validate payload structure and answers with Zod
   const validated = validateSurveySubmission(payload);
+  const def = getSurveyDefinition(validated.surveyId);
 
   // 2. Authoritative profile retrieval - do not trust renderer
-  const profile = getProfile();
+  const profile = getProfile(studentId);
   if (!profile || !profile.id || !profile.student_name) {
     throw new Error('No registered student profile found. Please set up your student profile first.');
   }
 
-  // 3. Pre-check for duplicate submission
-  const existing = getSurveyResponse(validated.surveyId);
+  // 3. Pre-check for duplicate submission for this specific student
+  const existing = getSurveyResponse(validated.surveyId, profile.id);
   if (existing) {
     throw new Error(
-      `Survey was already submitted on ${existing.submittedAt}. Duplicate submissions are not permitted.`
+      `Survey was already submitted by ${profile.student_name} on ${existing.submittedAt}. Duplicate submissions are not permitted.`
     );
   }
 
@@ -145,26 +150,36 @@ export function submitSurveyResponse(payload: unknown): SurveySubmitResult {
   db.exec('BEGIN IMMEDIATE');
   try {
     const now = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const externalResponseId = `local-${Date.now()}-${profile.id}`;
+    const importHash = `local-${Date.now()}-${profile.id}`;
+    const surveyVersion = def.version || DEFAULT_SURVEY_VERSION;
 
     const stmt = db.prepare(`
       INSERT INTO survey_responses (
         survey_id,
+        survey_version,
         student_profile_id,
         student_name,
         student_class,
         answers_json,
         submitted_at,
-        status
-      ) VALUES (?, ?, ?, ?, ?, ?, 'submitted')
+        status,
+        source_type,
+        external_response_id,
+        import_hash
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, 'submitted', 'local', ?, ?)
     `);
 
     const result = stmt.run(
       validated.surveyId,
+      surveyVersion,
       profile.id,
       profile.student_name,
       profile.student_class,
       JSON.stringify(validated.answers),
-      now
+      now,
+      externalResponseId,
+      importHash
     );
 
     db.exec('COMMIT');
@@ -178,7 +193,7 @@ export function submitSurveyResponse(payload: unknown): SurveySubmitResult {
   } catch (err: any) {
     db.exec('ROLLBACK');
     if (err.message && err.message.includes('UNIQUE constraint failed')) {
-      throw new Error('A submission has already been recorded for this profile. Duplicate submissions are not allowed.');
+      throw new Error('A submission has already been recorded for this student. Duplicate submissions are not allowed.');
     }
     throw err;
   }

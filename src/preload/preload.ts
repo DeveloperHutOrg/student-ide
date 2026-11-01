@@ -3,7 +3,8 @@ import { ElectronAPI, SupportedLanguageId, ExecutionOutput, ExecutionResult } fr
 
 const api: ElectronAPI = {
   // Profile
-  getProfile: () => ipcRenderer.invoke('profile:get'),
+  getProfile: (studentId?: number) => ipcRenderer.invoke('profile:get', studentId),
+  getAllProfiles: () => ipcRenderer.invoke('profile:getAll'),
   saveProfile: (name: string, studentClass: number) =>
     ipcRenderer.invoke('profile:save', { name, studentClass }),
 

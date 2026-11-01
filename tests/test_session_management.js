@@ -83,8 +83,8 @@ async function runTests() {
 
     // --- TEST 5: Switch Student Profile ---
     console.log('\n--- TEST 5: Switch Student Profile ---');
-    db.saveProfile('Priya Sharma', 11);
-    const switchedLogin = sessionService.createSession(1);
+    const priyaProfile = db.saveProfile('Priya Sharma', 11);
+    const switchedLogin = sessionService.createSession(priyaProfile.id);
     assert.strictEqual(switchedLogin.session.student.student_name, 'Priya Sharma');
     assert.strictEqual(switchedLogin.session.student.student_class, 11);
 

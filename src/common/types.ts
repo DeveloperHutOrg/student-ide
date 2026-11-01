@@ -166,6 +166,7 @@ export interface AdminSurveyStats {
   localResponses: number;
   importedResponses: number;
   currentComputerSubmitted: boolean;
+  uniqueStudents: number;
   classDistribution: Record<number, number>;
   questionStats: {
     q1: Record<string, number>;
@@ -223,7 +224,8 @@ export interface PublicSessionInfo {
 
 export interface ElectronAPI {
   // Profile
-  getProfile: () => Promise<StudentProfile | null>;
+  getProfile: (studentId?: number) => Promise<StudentProfile | null>;
+  getAllProfiles: () => Promise<StudentProfile[]>;
   saveProfile: (name: string, studentClass: number) => Promise<StudentProfile>;
   
   // Session & Logout

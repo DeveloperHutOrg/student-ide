@@ -51,9 +51,41 @@ export function initDatabase(customPath?: string): DatabaseSync {
   return db;
 }
 
-export function getProfile(): StudentProfile | null {
+export function getProfile(studentId?: number): StudentProfile | null {
   const db = initDatabase();
-  const stmt = db.prepare('SELECT id, student_name, student_class, created_at, updated_at FROM profile WHERE id = 1');
+
+  if (studentId) {
+    const stmt = db.prepare('SELECT id, student_name, student_class, created_at, updated_at FROM profile WHERE id = ?');
+    const row = stmt.get(studentId) as any;
+    if (row) {
+      return {
+        id: row.id,
+        student_name: row.student_name,
+        student_class: row.student_class,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+      };
+    }
+  }
+
+  // Fallback: check last active student stored in settings
+  const lastActiveRow = db.prepare("SELECT value FROM settings WHERE key = 'last_active_student_id'").get() as any;
+  if (lastActiveRow && lastActiveRow.value) {
+    const stmt = db.prepare('SELECT id, student_name, student_class, created_at, updated_at FROM profile WHERE id = ?');
+    const row = stmt.get(Number(lastActiveRow.value)) as any;
+    if (row) {
+      return {
+        id: row.id,
+        student_name: row.student_name,
+        student_class: row.student_class,
+        created_at: row.created_at,
+        updated_at: row.updated_at,
+      };
+    }
+  }
+
+  // Fallback: return most recently updated profile
+  const stmt = db.prepare('SELECT id, student_name, student_class, created_at, updated_at FROM profile ORDER BY updated_at DESC LIMIT 1');
   const row = stmt.get() as any;
   if (!row) return null;
   return {
@@ -65,20 +97,64 @@ export function getProfile(): StudentProfile | null {
   };
 }
 
-export function saveProfile(studentName: string, studentClass: number): StudentProfile {
+export function getAllProfiles(): StudentProfile[] {
+  const db = initDatabase();
+  const rows = db.prepare('SELECT id, student_name, student_class, created_at, updated_at FROM profile ORDER BY updated_at DESC').all() as any[];
+  return rows.map((row) => ({
+    id: row.id,
+    student_name: row.student_name,
+    student_class: row.student_class,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  }));
+}
+
+export function saveProfile(studentName: string, studentClass: number, existingId?: number): StudentProfile {
   const db = initDatabase();
   const trimmedName = studentName.trim();
   const validClass = Math.max(6, Math.min(12, Math.floor(studentClass)));
 
-  const stmt = db.prepare(`
-    INSERT INTO profile (id, student_name, student_class, updated_at)
-    VALUES (1, ?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(id) DO UPDATE SET
-      student_name = excluded.student_name,
-      student_class = excluded.student_class,
-      updated_at = CURRENT_TIMESTAMP
-  `);
-  stmt.run(trimmedName, validClass);
+  let profileId: number;
+
+  if (existingId) {
+    const checkStmt = db.prepare('SELECT id FROM profile WHERE id = ?');
+    const exists = checkStmt.get(existingId) as any;
+    if (exists) {
+      db.prepare(`
+        UPDATE profile 
+        SET student_name = ?, student_class = ?, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+      `).run(trimmedName, validClass, existingId);
+      profileId = existingId;
+    } else {
+      const info = db.prepare(`
+        INSERT INTO profile (student_name, student_class, updated_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+      `).run(trimmedName, validClass);
+      profileId = Number(info.lastInsertRowid);
+    }
+  } else {
+    // Check if student with same name and class already exists (case-insensitive)
+    const findStmt = db.prepare('SELECT id FROM profile WHERE student_name = ? COLLATE NOCASE AND student_class = ? LIMIT 1');
+    const existing = findStmt.get(trimmedName, validClass) as any;
+    if (existing) {
+      db.prepare('UPDATE profile SET updated_at = CURRENT_TIMESTAMP WHERE id = ?').run(existing.id);
+      profileId = existing.id;
+    } else {
+      const info = db.prepare(`
+        INSERT INTO profile (student_name, student_class, updated_at)
+        VALUES (?, ?, CURRENT_TIMESTAMP)
+      `).run(trimmedName, validClass);
+      profileId = Number(info.lastInsertRowid);
+    }
+  }
+
+  // Record this student as last active
+  db.prepare(`
+    INSERT INTO settings (key, value)
+    VALUES ('last_active_student_id', ?)
+    ON CONFLICT(key) DO UPDATE SET value = excluded.value
+  `).run(String(profileId));
 
   // When class is chosen for the first time, initialize language suggestions if not configured
   const countStmt = db.prepare('SELECT COUNT(*) as count FROM language_preferences');
@@ -87,7 +163,7 @@ export function saveProfile(studentName: string, studentClass: number): StudentP
     initDefaultLanguagesForClass(validClass);
   }
 
-  return getProfile()!;
+  return getProfile(profileId)!;
 }
 
 export function initDefaultLanguagesForClass(studentClass: number): void {

@@ -31,6 +31,17 @@ export const LoginView: React.FC<LoginViewProps> = ({
   const [switchName, setSwitchName] = useState('');
   const [switchClass, setSwitchClass] = useState<number>(profile?.student_class || 8);
   const [nameError, setNameError] = useState('');
+  const [allProfiles, setAllProfiles] = useState<StudentProfile[]>([]);
+
+  React.useEffect(() => {
+    if (window.api?.getAllProfiles) {
+      window.api.getAllProfiles().then((list) => {
+        if (list && Array.isArray(list)) {
+          setAllProfiles(list);
+        }
+      }).catch(() => {});
+    }
+  }, [isSwitching]);
 
   const handleSwitchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -167,9 +178,35 @@ export const LoginView: React.FC<LoginViewProps> = ({
                   <span>Switch Student Profile</span>
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Enter your name and school class to continue in the offline workspace.
+                  Select your profile below or enter your name to log in on this computer.
                 </p>
               </div>
+
+              {allProfiles.length > 0 && (
+                <div className="space-y-1.5 text-left">
+                  <span className="text-[11px] font-semibold text-slate-400">Saved Students on this PC:</span>
+                  <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                    {allProfiles.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setSwitchName(p.student_name);
+                          setSwitchClass(p.student_class);
+                          if (nameError) setNameError('');
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
+                          switchName.toLowerCase() === p.student_name.toLowerCase() && switchClass === p.student_class
+                            ? 'bg-indigo-600/30 border-indigo-500 text-indigo-300'
+                            : 'bg-[#0B0F19] border-[#1E293B] text-slate-300 hover:border-slate-500'
+                        }`}
+                      >
+                        {p.student_name} (Class {p.student_class})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2 text-left">
                 <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider">

@@ -61,15 +61,22 @@ export function getAdminSurveyStats(token?: string): AdminSurveyStats {
   const localResponses = localRow?.count || 0;
   const importedResponses = importedRow?.count || 0;
 
-  // 2. Current computer submission status
-  const profile = getProfile();
-  let currentComputerSubmitted = false;
-  if (profile && profile.id) {
-    const localCheck = db.prepare("SELECT id FROM survey_responses WHERE student_profile_id = ? AND source_type = 'local'").get(profile.id);
-    currentComputerSubmitted = !!localCheck;
-  }
+  // 2. Unique participating students across all submissions
+  const uniqueRow = db.prepare(`
+    SELECT COUNT(DISTINCT 
+      CASE 
+        WHEN student_profile_id IS NOT NULL AND source_type = 'local' 
+        THEN 'loc_' || student_profile_id 
+        ELSE 'ext_' || LOWER(TRIM(student_name)) || '_' || student_class 
+      END
+    ) as count FROM survey_responses
+  `).get() as { count: number };
+  const uniqueStudents = uniqueRow?.count || 0;
 
-  // 3. Class distribution (Classes 6 to 12)
+  // 3. Current computer submission status
+  const currentComputerSubmitted = localResponses > 0;
+
+  // 4. Class distribution (Classes 6 to 12)
   const classDist: Record<number, number> = { 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0 };
   const classRows = db.prepare('SELECT student_class, COUNT(*) as count FROM survey_responses GROUP BY student_class').all() as { student_class: number; count: number }[];
   for (const r of classRows) {
@@ -78,7 +85,7 @@ export function getAdminSurveyStats(token?: string): AdminSurveyStats {
     }
   }
 
-  // 4. Question breakdown
+  // 5. Question breakdown
   const q1Stats: Record<string, number> = {};
   const q2Stats: Record<string, number> = {};
   const q3Stats: Record<string, number> = {};
@@ -113,9 +120,9 @@ export function getAdminSurveyStats(token?: string): AdminSurveyStats {
     }
   }
 
-  // 5. Latest 5 submissions
+  // 6. Latest 5 submissions
   const latestRows = db.prepare(`
-    SELECT id, survey_id, student_profile_id, student_name, student_class, answers_json, submitted_at, status, source_type, external_response_id
+    SELECT id, survey_id, survey_version, student_profile_id, student_name, student_class, answers_json, submitted_at, status, source_type, external_response_id
     FROM survey_responses
     ORDER BY submitted_at DESC, id DESC
     LIMIT 5
@@ -129,6 +136,7 @@ export function getAdminSurveyStats(token?: string): AdminSurveyStats {
     return {
       id: r.id,
       surveyId: r.survey_id,
+      surveyVersion: r.survey_version || '1.0.0',
       studentProfileId: r.student_profile_id,
       studentName: r.student_name,
       studentClass: r.student_class,
@@ -145,6 +153,7 @@ export function getAdminSurveyStats(token?: string): AdminSurveyStats {
     localResponses,
     importedResponses,
     currentComputerSubmitted,
+    uniqueStudents,
     classDistribution: classDist,
     questionStats: {
       q1: q1Stats,
@@ -186,7 +195,7 @@ export function getAdminResponses(filters: AdminFilterOptions = {}, token?: stri
   const sortDir = filters.sortBy === 'oldest' ? 'ASC' : 'DESC';
 
   const sql = `
-    SELECT id, survey_id, student_profile_id, student_name, student_class, answers_json, submitted_at, status, source_type, external_response_id
+    SELECT id, survey_id, survey_version, student_profile_id, student_name, student_class, answers_json, submitted_at, status, source_type, external_response_id
     FROM survey_responses
     ${whereSql}
     ORDER BY submitted_at ${sortDir}, id ${sortDir}
@@ -202,6 +211,7 @@ export function getAdminResponses(filters: AdminFilterOptions = {}, token?: stri
     return {
       id: r.id,
       surveyId: r.survey_id,
+      surveyVersion: r.survey_version || '1.0.0',
       studentProfileId: r.student_profile_id,
       studentName: r.student_name,
       studentClass: r.student_class,

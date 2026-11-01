@@ -14,17 +14,25 @@ interface InternalSession {
 let activeSession: InternalSession | null = null;
 
 /**
+ * Returns the active student's ID or null if no session is active.
+ */
+export function getActiveStudentId(): number | null {
+  return activeSession ? activeSession.studentId : null;
+}
+
+/**
  * Creates and registers a new active session for the specified student.
  */
-export function createSession(studentId: number = 1): { success: boolean; session: PublicSessionInfo } {
+export function createSession(studentId?: number): { success: boolean; session: PublicSessionInfo } {
+  const targetId = studentId !== undefined ? studentId : (db.getProfile()?.id || 1);
   const sessionId = crypto.randomUUID();
   activeSession = {
     sessionId,
-    studentId,
+    studentId: targetId,
     loginTime: Date.now(),
   };
 
-  const student = db.getProfile();
+  const student = db.getProfile(studentId);
   return {
     success: true,
     session: {
@@ -45,7 +53,7 @@ export function getActiveSession(): PublicSessionInfo {
     };
   }
 
-  const student = db.getProfile();
+  const student = db.getProfile(activeSession.studentId);
   return {
     isAuthenticated: true,
     student: student || undefined,

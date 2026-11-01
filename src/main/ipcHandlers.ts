@@ -15,10 +15,16 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
   });
 
   ipcMain.handle('session:login', async (_, params?: { studentId?: number; name?: string; studentClass?: number }) => {
+    let targetStudentId = params?.studentId;
     if (params?.name && params?.studentClass) {
-      db.saveProfile(params.name, params.studentClass);
+      const saved = db.saveProfile(params.name, params.studentClass);
+      targetStudentId = saved.id;
     }
-    return sessionService.createSession(params?.studentId || 1);
+    if (!targetStudentId) {
+      const current = db.getProfile();
+      targetStudentId = current ? current.id : 1;
+    }
+    return sessionService.createSession(targetStudentId);
   });
 
   ipcMain.handle('session:logout', async () => {
@@ -30,8 +36,13 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
   });
 
   // Profile handlers
-  ipcMain.handle('profile:get', async () => {
-    return db.getProfile();
+  ipcMain.handle('profile:get', async (_, studentId?: number) => {
+    const targetId = studentId || sessionService.getActiveStudentId() || undefined;
+    return db.getProfile(targetId);
+  });
+
+  ipcMain.handle('profile:getAll', async () => {
+    return db.getAllProfiles();
   });
 
   ipcMain.handle('profile:save', async (_, { name, studentClass }: { name: string; studentClass: number }) => {
@@ -118,7 +129,8 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
 
   // Survey handlers
   ipcMain.handle('survey:getStatus', async (_, surveyId?: string) => {
-    return surveyService.getSurveyStatus(surveyId);
+    const studentId = sessionService.getActiveStudentId() || undefined;
+    return surveyService.getSurveyStatus(surveyId, studentId);
   });
 
   ipcMain.handle('survey:getQuestions', async (_, surveyId?: string) => {
@@ -126,11 +138,13 @@ export function registerIpcHandlers(getMainWindow: () => BrowserWindow | null): 
   });
 
   ipcMain.handle('survey:submit', async (_, payload: unknown) => {
-    return surveyService.submitSurveyResponse(payload);
+    const studentId = sessionService.getActiveStudentId() || undefined;
+    return surveyService.submitSurveyResponse(payload, studentId);
   });
 
   ipcMain.handle('survey:getResponse', async (_, surveyId?: string) => {
-    return surveyService.getSurveyResponse(surveyId);
+    const studentId = sessionService.getActiveStudentId() || undefined;
+    return surveyService.getSurveyResponse(surveyId, studentId);
   });
 
   // Admin Survey Dashboard Handlers
